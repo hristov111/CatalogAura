@@ -35,6 +35,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly promptText = signal('');
   readonly showHeroGallery = signal(false);
   readonly isTransitioning = signal(false);
+  readonly transitionState = signal<'idle' | 'exit-next' | 'exit-prev' | 'enter-next' | 'enter-prev'>('idle');
   readonly particleTrigger = signal(0);
   readonly activeGalleryIndex = signal(0);
   
@@ -130,26 +131,40 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isTransitioning()) return;
     
     this.isTransitioning.set(true);
+    this.transitionState.set('exit-next');
     this.particleTrigger.update(v => v + 1);
     
     setTimeout(() => {
       this.featuredIndex.update(current => (current + 1) % this.profiles().length);
       this.activeGalleryIndex.set(0); // Reset gallery
-      this.isTransitioning.set(false);
-    }, 600);
+      
+      this.transitionState.set('enter-next');
+      
+      setTimeout(() => {
+        this.transitionState.set('idle');
+        this.isTransitioning.set(false);
+      }, 500); // Match enter animation duration
+    }, 400); // Match exit animation duration
   }
 
   prevProfile(): void {
     if (this.isTransitioning()) return;
     
     this.isTransitioning.set(true);
+    this.transitionState.set('exit-prev');
     this.particleTrigger.update(v => v + 1);
 
     setTimeout(() => {
       this.featuredIndex.update(current => (current - 1 + this.profiles().length) % this.profiles().length);
       this.activeGalleryIndex.set(0); // Reset gallery
-      this.isTransitioning.set(false);
-    }, 600);
+      
+      this.transitionState.set('enter-prev');
+      
+      setTimeout(() => {
+        this.transitionState.set('idle');
+        this.isTransitioning.set(false);
+      }, 500); // Match enter animation duration
+    }, 400); // Match exit animation duration
   }
 
   setGalleryImage(index: number): void {
@@ -201,6 +216,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.selectedProfile.set(profile);
       window.scrollTo(0, 0);
     }
+  }
+
+  onCallClick(profile: Profile): void {
+    console.log('Call clicked for:', profile.name);
+    // Placeholder for call logic
   }
 
   deselectProfile(): void {

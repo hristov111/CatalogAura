@@ -137,6 +137,42 @@
   }
 }
 
+/* Primary CALL CTA Styles */
+.cta-call-primary {
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.3);
+  animation: callHeartbeat 2.5s ease-in-out infinite;
+}
+
+.cta-call-primary:hover {
+  box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.6);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.cta-call-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4);
+}
+
+.cta-dynamic-gradient {
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent), white 40%), var(--accent));
+}
+
+@keyframes callHeartbeat {
+  0% { transform: scale(1); box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.3); }
+  50% { transform: scale(1.03); box-shadow: 0 0 25px rgba(var(--accent-rgb), 0.45); }
+  100% { transform: scale(1); box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.3); }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
 /* Glass Highlight Sweep Animation */
 .glass-highlight {
   position: relative;
@@ -231,7 +267,9 @@
   .hero-container,
   .cta-button,
   .cta-text,
-  .glass-highlight::before {
+  .glass-highlight::before,
+  .cta-call-primary,
+  .hero-transition-wrapper {
     transition-duration: 0.3s;
     animation: none;
   }
@@ -386,10 +424,48 @@ button:hover {
   will-change: opacity, filter, transform;
 }
 
-.transition-blur {
-  opacity: 0;
-  filter: blur(20px);
-  transform: scale(0.95);
+/* Cinematic Model Transitions */
+.hero-transition-wrapper {
+  transition: none; /* Controlled by keyframes */
+  width: 100%;
+}
+
+.hero-transition-wrapper.exit-next {
+  animation: heroExitNext 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+.hero-transition-wrapper.enter-next {
+  animation: heroEnterNext 0.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+}
+
+.hero-transition-wrapper.exit-prev {
+  animation: heroExitPrev 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+.hero-transition-wrapper.enter-prev {
+  animation: heroEnterPrev 0.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+}
+
+/* NEXT Animations */
+@keyframes heroExitNext {
+  0% { opacity: 1; transform: scale(1) translateX(0); }
+  100% { opacity: 0; transform: scale(0.98) translateX(-20px); }
+}
+
+@keyframes heroEnterNext {
+  0% { opacity: 0; transform: scale(0.98) translateX(20px); }
+  100% { opacity: 1; transform: scale(1) translateX(0); }
+}
+
+/* PREV Animations */
+@keyframes heroExitPrev {
+  0% { opacity: 1; transform: scale(1) translateX(0); }
+  100% { opacity: 0; transform: scale(0.98) translateX(20px); }
+}
+
+@keyframes heroEnterPrev {
+  0% { opacity: 0; transform: scale(0.98) translateX(-20px); }
+  100% { opacity: 1; transform: scale(1) translateX(0); }
 }
 
 /* Hide scrollbar for gallery thumbnails */
@@ -399,4 +475,66 @@ button:hover {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Cinematic Melt Effect */
+.cinematic-image-wrapper {
+  box-shadow: 0 0 50px -10px rgba(var(--accent-rgb), 0.35);
+  animation: breathingGlow 5s ease-in-out infinite;
+  overflow: visible !important; /* Allow shadow to spill */
+  transform: translateZ(0); /* Hardware accelerate */
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cinematic-image-wrapper:hover {
+  transform: translateY(-2px) scale(1.005);
+}
+
+.cinematic-thumbnail {
+  box-shadow: 0 0 15px -3px rgba(var(--accent-rgb), 0.25);
+  border: 1px solid rgba(var(--accent-rgb), 0.15);
+  overflow: visible !important;
+}
+
+.active-thumb {
+  border-color: rgba(var(--accent-rgb), 0.8);
+  box-shadow: 0 0 20px -2px rgba(var(--accent-rgb), 0.5);
+  opacity: 1;
+}
+
+.inactive-thumb {
+  opacity: 0.6;
+}
+
+.melt-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, transparent 70%, rgba(var(--surface-rgb), 0.5) 100%);
+  box-shadow: inset 0 0 30px 5px rgba(0,0,0,0.4);
+  z-index: 5;
+  mix-blend-mode: multiply;
+  border-radius: inherit;
+}
+
+.dust-overlay {
+  position: absolute;
+  inset: -10%; /* Slightly larger to move */
+  background-image: radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.15;
+  z-index: 4;
+  pointer-events: none;
+  animation: floatDust 20s linear infinite;
+  mix-blend-mode: overlay;
+}
+
+@keyframes breathingGlow {
+  0%, 100% { box-shadow: 0 0 40px -10px rgba(var(--accent-rgb), 0.3); }
+  50% { box-shadow: 0 0 60px -5px rgba(var(--accent-rgb), 0.45); }
+}
+
+@keyframes floatDust {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-25px, -25px); }
 }
