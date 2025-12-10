@@ -7,12 +7,17 @@ export interface Profile {
   imageUrl: string;
   interests: string[];
   bio: string;
+  extendedBio?: string; // More detailed biography for hero section
   passions: string[];
   values: string[];
   gallery: string[];
   status: 'online' | 'offline';
   availability: 'Available for chat' | 'Busy';
   personalityLine: string;
+  testimonials?: string[]; // Social proof testimonials
+  specialOffer?: string; // Special CTA offer
+  responseTime?: string; // Average response time
+  verified?: boolean; // Verification badge
   theme: {
     accent: string;
     accentRGB: string;
