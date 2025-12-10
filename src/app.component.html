@@ -1,6 +1,6 @@
 
 @if (featuredProfile(); as featured) {
-  <div class="relative min-h-screen overflow-x-hidden transition-colors duration-700" 
+  <div class="relative min-h-screen overflow-x-hidden transition-colors duration-700 theme-surface" 
        [style.--accent]="featured.theme.accent"
        [style.--accent-rgb]="featured.theme.accentRGB"
        [style.--bg-start]="featured.theme.bgStart"
@@ -31,24 +31,80 @@
             (mouseleave)="startSlider()"
             class="min-h-screen flex items-center relative overflow-hidden px-4 md:px-8 lg:px-12">
             
-            <app-particle-background />
+            <app-particle-background 
+              [accent]="featured.theme.accent" 
+              [accentRgb]="featured.theme.accentRGB" 
+              [swapTrigger]="featuredIndex()"
+            />
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-[#0b1020]/50 to-black/30 pointer-events-none z-10"></div>
 
             <div class="grid lg:grid-cols-2 gap-16 items-center container mx-auto">
               <!-- Left Column: Text Content -->
-                <div class="text-center lg:text-left z-10 darken-bg-on-swap">
-                  <p class="text-sm tracking-widest text-[var(--accent)] mb-4 animate-headline">
-                    {{ dynamicHeroContent().identity }}
-                  </p>
-                  <h1 class="text-4xl md:text-5xl font-medium text-[var(--text)] max-w-xl mx-auto lg:mx-0 animate-headline leading-tight" style="animation-delay: 150ms;">
-                    {{ dynamicHeroContent().headline }}
-                  </h1>
-                  <p class="mt-4 text-lg text-[var(--muted)] max-w-xl mx-auto lg:mx-0 animate-subline">
-                      {{ dynamicHeroContent().subline }}
-                  </p>
-                  <button (click)="selectProfile(featured.id)" class="mt-8 border border-[var(--btn-border)] text-[var(--accent)] font-semibold uppercase tracking-widest px-10 py-4 rounded-full hover:bg-[var(--btn-bg)] hover:text-[var(--btn-text)] transition-all duration-300 hover:scale-105 animate-cta">
-                    {{ dynamicHeroContent().cta }}
-                  </button>
-                </div>
+                @for (profile of profiles(); track profile.id) {
+                  @if (profile.id === featured.id) {
+                    <div class="text-center lg:text-left z-10 darken-bg-on-swap space-y-4 hero-animate">
+                      <p class="text-sm tracking-widest text-[var(--accent)] mb-2 animate-headline hero-identity">
+                        {{ dynamicHeroContent().identity }}
+                      </p>
+                      <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-center lg:justify-start hero-status">
+                        <span
+                          class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-[0.15em] bg-[var(--accent-soft)] text-[var(--accent)] status-chip"
+                          [class.pulse]="featured.status === 'online'"
+                        >
+                          <span class="w-2.5 h-2.5 rounded-full bg-[var(--accent)]"></span>
+                          {{ featured.status === 'online' ? 'Online Now' : 'Available Soon' }}
+                        </span>
+                        <span class="text-xs text-[var(--muted)] flex items-center gap-2 hero-social">
+                          <svg class="w-4 h-4 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+                            <circle cx="12" cy="12" r="9" />
+                          </svg>
+                          {{ dynamicHeroStats().rating }} ★ · Replies in ~{{ dynamicHeroStats().replyMinutes }} min · {{ dynamicHeroStats().recentChats }} recent chats
+                        </span>
+                      </div>
+                      <h1 class="text-4xl md:text-5xl font-medium text-[var(--text)] max-w-xl mx-auto lg:mx-0 animate-headline leading-tight hero-headline">
+                        {{ dynamicHeroContent().headline }}
+                      </h1>
+                      <p class="mt-4 text-lg text-[var(--muted)] max-w-xl mx-auto lg:mx-0 animate-subline hero-subline">
+                          {{ dynamicHeroContent().subline }}
+                      </p>
+                      <div class="flex flex-col gap-4 mt-6 w-full max-w-sm hero-buttons">
+                        <div class="relative">
+                          <button (click)="selectProfile(profile.id)" class="w-full border border-[var(--btn-border)] text-[var(--accent)] font-semibold uppercase tracking-widest px-10 py-4 rounded-full hover:bg-[var(--btn-bg)] hover:text-[var(--btn-text)] transition-all duration-300 hover:scale-105 animate-cta text-center cta-shimmer">
+                            Start a chat with {{ profile.name }}
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          (click)="openHeroGallery()"
+                          class="w-full relative overflow-hidden px-10 py-4 rounded-full font-semibold uppercase tracking-widest text-white bg-gradient-to-r from-[var(--accent)] via-white/70 to-[var(--accent)] shadow-[0_10px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_10px_55px_rgba(0,0,0,0.55)] transition-all duration-500 ease-out hover:scale-105 text-center"
+                        >
+                          <span class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.35),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.25),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(255,255,255,0.3),transparent_35%)] mix-blend-screen opacity-70 animate-pulse-slow"></span>
+                          <span class="absolute -inset-[1px] bg-gradient-to-r from-white/30 via-[var(--accent)]/50 to-white/30 blur-lg opacity-60"></span>
+                          <span class="relative z-10 flex items-center gap-2 whitespace-nowrap justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M3 12h18M3 19h18"></path>
+                            </svg>
+                            View {{ profile.name }}'s Gallery
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          (click)="nextProfile()"
+                          class="w-full relative overflow-hidden px-10 py-4 rounded-full font-semibold uppercase tracking-widest text-[var(--text)] bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_40%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.1),transparent_35%)] border border-white/10 backdrop-blur-md shadow-[0_10px_40px_rgba(0,0,0,0.35)] hover:shadow-[0_10px_55px_rgba(0,0,0,0.55)] transition-all duration-400 hover:scale-[1.03] text-center"
+                        >
+                          <span class="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/35 via-[var(--accent-soft)] to-transparent opacity-80"></span>
+                          <span class="relative z-10 flex items-center gap-2 whitespace-nowrap justify-center">
+                            Next Model
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/>
+                            </svg>
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                }
 
               <!-- Right Column: Image Slider -->
               <div class="relative hidden lg:flex justify-center items-center">
@@ -100,6 +156,38 @@
               </div>
             </div>
 
+            @if (showHeroGallery()) {
+              <div class="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+                <div class="relative w-full max-w-5xl bg-[rgba(12,15,26,0.9)] border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+                  <div class="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.35em] text-[var(--muted)]">Hero Gallery</p>
+                      <p class="text-lg font-semibold text-[var(--text)]">Images for {{ featured.name }}</p>
+                    </div>
+                    <button (click)="closeHeroGallery()" class="text-[var(--text)]/80 hover:text-white transition-colors rounded-full p-2 hover:bg-white/10">
+                      <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12M6 18 18 6"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="max-h-[70vh] overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @for (image of featured.gallery; track image) {
+                      <div class="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5">
+                        <img [src]="image" [alt]="featured.name + ' gallery image'" class="w-full h-52 object-cover transition duration-500 group-hover:scale-105" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-400"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-3 text-sm text-white/90 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition duration-400">
+                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 17h18M8 12h8"/>
+                          </svg>
+                          Hero Visual {{ $index + 1 }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- Bottom Navigation Bar -->
             <div class="absolute bottom-0 left-0 right-0 px-4 md:px-8 lg:px-12 pb-8 z-20">
                 <div class="container mx-auto flex justify-between items-center text-[var(--muted)]">
@@ -130,7 +218,7 @@
 
         <!-- Search Section -->
         <section class="px-4 md:px-8 lg:px-12 py-16">
-          <div class="max-w-2xl mx-auto relative">
+          <div class="max-w-2xl mx-auto relative section-panel">
               <div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-[var(--muted)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -147,19 +235,21 @@
 
         <!-- Profile Grid -->
         <section class="px-4 md:px-8 lg:px-12 pb-16">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div class="section-panel">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             @for (profile of filteredProfiles(); track profile.id) {
               <app-profile-card 
                 [profile]="profile" 
                 (selectProfile)="selectProfile($event)" 
               />
             }
-          </div>
-          @if (filteredProfiles().length === 0) {
-            <div class="text-center py-20">
-                <p class="text-[var(--muted)]">No profiles match your search.</p>
             </div>
-          }
+            @if (filteredProfiles().length === 0) {
+              <div class="text-center py-20">
+                  <p class="text-[var(--muted)]">No profiles match your search.</p>
+              </div>
+            }
+          </div>
         </section>
       }
     </main>

@@ -23,6 +23,7 @@ const HERO_COPY_SETS = [
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
+  styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, NgOptimizedImage, HeaderComponent, ProfileCardComponent, ProfileDetailComponent, ParticleBackgroundComponent],
 })
@@ -31,6 +32,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly profiles = signal<Profile[]>(MOCK_PROFILES);
   readonly selectedProfile = signal<Profile | null>(null);
   readonly promptText = signal('');
+  readonly showHeroGallery = signal(false);
 
   readonly featuredIndex = signal(0);
   private sliderInterval: any;
@@ -73,6 +75,18 @@ export class AppComponent implements OnInit, OnDestroy {
         subline: profile.personalityLine,
         cta: copySet.ctaTemplate.replace('{name}', profile.name)
     };
+  });
+
+  readonly dynamicHeroStats = computed(() => {
+    const profile = this.featuredProfile();
+    if (!profile) {
+      return { rating: '4.8', replyMinutes: 5, recentChats: 320 };
+    }
+    const base = profile.id;
+    const rating = (4.6 + ((base % 4) * 0.1)).toFixed(1);
+    const replyMinutes = 3 + (base % 4);
+    const recentChats = 180 + base * 40;
+    return { rating, replyMinutes, recentChats };
   });
 
   ngOnInit(): void {
@@ -119,6 +133,16 @@ export class AppComponent implements OnInit, OnDestroy {
 
   deselectProfile(): void {
     this.selectedProfile.set(null);
+  }
+
+  openHeroGallery(): void {
+    this.showHeroGallery.set(true);
+    this.stopSlider();
+  }
+
+  closeHeroGallery(): void {
+    this.showHeroGallery.set(false);
+    this.startSlider();
   }
 }
 
