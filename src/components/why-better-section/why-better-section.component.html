@@ -40,7 +40,9 @@
         <div 
           *ngFor="let pillar of valuePillars; let i = index; trackBy: trackByTitle" 
           class="group relative backdrop-blur-sm rounded-2xl px-8 py-10 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_20px_60px_-10px_var(--hover-shadow-color)] feature-card"
-          [ngStyle]="{ 
+          (mouseenter)="onCardHover(i)"
+          (mouseleave)="onCardLeave(i)"
+          [ngStyle]="{  
             'background-color': getCardBackground(),
             'border': '1px solid ' + getCardBorder(),
             '--hover-shadow-color': getGlowColor()
@@ -56,17 +58,19 @@
             <!-- Media for first card (Brain) -->
             <div *ngIf="i === 0" class="relative mb-6 rounded-xl overflow-hidden h-40 w-full shadow-lg">
               <img
-                src="assets/pictures/brain.png"
+                src="/assets/pictures/brain.png"
                 alt="Emotional intelligence visualization"
-                class="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out group-hover:opacity-0"
               />
               <video
-                src="assets/videos/brain.mp4"
+                #videoPlayer
+                src="/assets/videos/brain.mp4"
                 autoplay
                 muted
                 loop
                 playsinline
-                class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                preload="auto"
+                class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-100"
               ></video>
             </div>
 

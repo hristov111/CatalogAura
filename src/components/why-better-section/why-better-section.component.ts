@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Input, ViewChild, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, ViewChild, ViewChildren, QueryList, ElementRef, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ParticleBackgroundComponent } from '../particle-background/particle-background.component';
 
@@ -42,11 +42,14 @@ export class WhyBetterSectionComponent implements AfterViewInit, OnDestroy {
   @Input() theme: Theme | null = null;
   @Input() swapTrigger: number = 0; // For synchronizing particle transitions with hero section
   @ViewChild('whySection', { static: false }) sectionRef!: ElementRef<HTMLElement>;
+  @ViewChildren('videoPlayer') videoPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
 
   // Animation state - only go from false to true, never back
   hasEnteredViewport = false;
   cardsAnimated = false;
   typingStarted = false;
+  headlineTypingComplete = false;
+  subheadlineTypingComplete = false;
 
   // Text content
   fullHeadline = 'Why Thousands Choose a Companion Like No Other';
@@ -153,6 +156,22 @@ export class WhyBetterSectionComponent implements AfterViewInit, OnDestroy {
     return item.title;
   }
 
+  onCardHover(index: number): void {
+    if (index === 0 && this.videoPlayers?.first) {
+      const video = this.videoPlayers.first.nativeElement;
+      video.muted = true;
+      video.play().catch(() => {
+        // Handle autoplay blocking if necessary
+      });
+    }
+  }
+
+  onCardLeave(index: number): void {
+    if (index === 0 && this.videoPlayers?.first) {
+      this.videoPlayers.first.nativeElement.pause();
+    }
+  }
+
   ngAfterViewInit(): void {
     this.setupScrollTrigger();
   }
@@ -167,6 +186,9 @@ export class WhyBetterSectionComponent implements AfterViewInit, OnDestroy {
     this.hasEnteredViewport = false;
     this.cardsAnimated = false;
     this.typingStarted = false;
+
+    this.headlineTypingComplete = false;
+    this.subheadlineTypingComplete = false;
 
     // Clear all typed text (this will hide the elements via CSS :empty)
     this.displayHeadline = '';
@@ -184,21 +206,22 @@ export class WhyBetterSectionComponent implements AfterViewInit, OnDestroy {
       (entries) => {
         entries.forEach(entry => {
           const ratio = entry.intersectionRatio;
+          const isIntersecting = entry.isIntersecting;
 
           // Section becomes visible → start animation if not already running
-          if (ratio >= 0.25 && !this.cardsAnimated && !this.typingStarted) {
+          if ((ratio >= 0.1 || isIntersecting) && !this.cardsAnimated && !this.typingStarted) {
             this.startAnimationSequence();
           }
 
           // Section completely out of view → reset for next time
-          if (ratio === 0 && (this.cardsAnimated || this.typingStarted)) {
+          if (ratio === 0 && !isIntersecting && (this.cardsAnimated || this.typingStarted)) {
             this.resetAnimationState();
           }
         });
       },
       {
-        threshold: [0, 0.25], // Track both "not visible at all" and "at least 25% visible"
-        rootMargin: '0px 0px 0px 0px'
+        threshold: [0, 0.1], // Trigger earlier
+        rootMargin: '0px 0px -10% 0px' // Trigger when 10% from bottom
       }
     );
 
@@ -237,14 +260,19 @@ export class WhyBetterSectionComponent implements AfterViewInit, OnDestroy {
 
     // First type the headline
     this.typeText(this.fullHeadline, 'headline', () => {
+      this.headlineTypingComplete = true;
+      this.cdr.detectChanges();
       // After headline is done, type the subheadline
-      this.typeText(this.fullSubheadline, 'subheadline');
+      this.typeText(this.fullSubheadline, 'subheadline', () => {
+        this.subheadlineTypingComplete = true;
+        this.cdr.detectChanges();
+      });
     });
   }
 
   private typeText(text: string, target: 'headline' | 'subheadline', callback?: () => void): void {
     let i = 0;
-    const speed = 30; // milliseconds per character
+    const speed = 40; // slower speed (was 30)
 
     if (this.typingInterval) {
       clearInterval(this.typingInterval);

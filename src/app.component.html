@@ -48,9 +48,11 @@
             class="min-h-screen flex items-center relative overflow-hidden px-4 md:px-8 lg:px-12 pt-24 pb-32">
             
             <app-particle-background 
+              class="absolute inset-0 pointer-events-none z-0"
               [accent]="featured.theme.accent" 
               [accentRgb]="featured.theme.accentRGB" 
               [swapTrigger]="particleTrigger()"
+              fitMode="container"
             />
             <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-[#0b1020]/50 to-black/30 pointer-events-none z-10"></div>
 
