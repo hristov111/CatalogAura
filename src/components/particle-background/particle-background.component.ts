@@ -12,6 +12,8 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   @Input() accent: string = '#a78bfa';
   @Input() accentRgb: string = '167, 139, 250';
   @Input() swapTrigger: number = 0; // bump this when hero changes to animate
+  @Input() mode: 'hero' | 'section' = 'hero';
+  @Input() fitMode: 'viewport' | 'container' = 'viewport';
 
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
@@ -26,8 +28,80 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   private swapState: { active: boolean; start: number; duration: number } = { active: false, start: 0, duration: 0.9 };
   private parallax = new THREE.Vector2(0, 0);
   private parallaxTarget = new THREE.Vector2(0, 0);
+  private resizeObserver?: ResizeObserver;
+
+  // New floating and breathing animation properties
+  private particleVelocities!: Float32Array; // Y velocities for upward floating
+  private particlePhases!: Float32Array;    // Phase offsets for breathing/twinkling
+  private particleSizes!: Float32Array;     // Individual particle sizes
+  private originalColors!: Float32Array;    // Store original colors for breathing effect
+  private particleCount!: number;          // Dynamic based on mode
+  private sparkleCount!: number;           // Dynamic based on mode
+  private modeConfig = {
+    hero: {
+      particleCount: 10000,
+      sparkleCount: 220,
+      baseOpacity: 0.35,
+      velocityScale: 1.0,
+      twinkleAmplitude: 0.4
+    },
+    section: {
+      particleCount: 6000,
+      sparkleCount: 120,
+      baseOpacity: 0.25,
+      velocityScale: 0.6,
+      twinkleAmplitude: 0.3
+    }
+  };
 
   constructor(private ngZone: NgZone) {}
+
+  /**
+   * Get canvas dimensions based on fitMode
+   */
+  private getCanvasDimensions(): { width: number; height: number } {
+    if (this.fitMode === 'viewport') {
+      return {
+        width: window.innerWidth,
+        height: window.innerHeight
+      };
+    } else {
+      // Container mode: use the parent element's dimensions
+      const parentElement = this.canvasRef.nativeElement.parentElement;
+      if (parentElement) {
+        const rect = parentElement.getBoundingClientRect();
+        return {
+          width: rect.width || window.innerWidth,
+          height: rect.height || window.innerHeight
+        };
+      } else {
+        // Fallback to viewport if no parent
+        return {
+          width: window.innerWidth,
+          height: window.innerHeight
+        };
+      }
+    }
+  }
+
+  /**
+   * Setup resize handling based on fitMode
+   */
+  private setupResizeHandling(): void {
+    if (this.fitMode === 'container') {
+      // Set up ResizeObserver for container mode to watch parent element size changes
+      const parentElement = this.canvasRef.nativeElement.parentElement;
+      if (parentElement && 'ResizeObserver' in window) {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          // Debounce resize events to avoid excessive updates
+          if (this.animationFrameId) {
+            this.onWindowResize();
+          }
+        });
+        this.resizeObserver.observe(parentElement);
+      }
+    }
+  }
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
@@ -35,6 +109,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
       this.createParticles();
       this.createSparkles();
       this.animate();
+      this.setupResizeHandling();
     });
     window.addEventListener('resize', this.onWindowResize);
     window.addEventListener('mousemove', this.onPointerMove, { passive: true });
@@ -44,9 +119,18 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     if ((changes['accent'] || changes['accentRgb']) && this.particles) {
       this.updatePalette();
       this.recolorParticles();
+      this.recolorSparkles(); // Also update sparkles with new theme
     }
     if (changes['swapTrigger'] && !changes['swapTrigger'].firstChange && this.particles) {
       this.triggerSwap();
+    }
+    if (changes['mode'] && !changes['mode'].firstChange && this.particles) {
+      // Recreate particles with new mode settings
+      this.scene.remove(this.particles);
+      this.scene.remove(this.sparkles);
+      this.disposeParticleGeometries();
+      this.createParticles();
+      this.createSparkles();
     }
   }
 
@@ -56,10 +140,24 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     }
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('mousemove', this.onPointerMove);
+    
+    // Clean up ResizeObserver
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = undefined;
+    }
+    
     this.disposeThreeObjects();
   }
   
   private disposeThreeObjects(): void {
+    this.disposeParticleGeometries();
+    if (this.renderer) {
+        this.renderer.dispose();
+    }
+  }
+
+  private disposeParticleGeometries(): void {
     if (this.particles) {
         this.particles.geometry.dispose();
         (this.particles.material as THREE.PointsMaterial).map?.dispose();
@@ -70,14 +168,13 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
         (this.sparkles.material as THREE.PointsMaterial).map?.dispose();
         (this.sparkles.material as THREE.PointsMaterial).dispose();
     }
-    if (this.renderer) {
-        this.renderer.dispose();
-    }
   }
 
   private initScene(): void {
+    const dimensions = this.getCanvasDimensions();
+    
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(75, dimensions.width / dimensions.height, 0.1, 1000);
     this.camera.position.z = 5;
 
     this.renderer = new THREE.WebGLRenderer({
@@ -85,7 +182,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
       alpha: true,
       antialias: true,
     });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(dimensions.width, dimensions.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
     this.clock = new THREE.Clock();
@@ -107,34 +204,61 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   }
 
   private createParticles(): void {
-    const particleCount = 10000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-    this.updatePalette();
-    this.colorIndices = new Uint8Array(particleCount);
+    // Get mode-specific configuration
+    const config = this.modeConfig[this.mode];
+    this.particleCount = config.particleCount;
+    this.baseOpacity = config.baseOpacity;
 
-    for (let i = 0; i < particleCount; i++) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(this.particleCount * 3);
+    const colors = new Float32Array(this.particleCount * 3);
+    const sizes = new Float32Array(this.particleCount);
+    
+    // Initialize animation data arrays
+    this.particleVelocities = new Float32Array(this.particleCount);
+    this.particlePhases = new Float32Array(this.particleCount);
+    this.particleSizes = new Float32Array(this.particleCount);
+    this.originalColors = new Float32Array(this.particleCount * 3);
+    
+    this.updatePalette();
+    this.colorIndices = new Uint8Array(this.particleCount);
+
+    for (let i = 0; i < this.particleCount; i++) {
       const i3 = i * 3;
       
+      // Particle positioning (keep original elliptical distribution)
       const radius = (Math.random() ** 2) * 8 + 1;
       const angle = Math.random() * Math.PI * 2;
       const z = (Math.random() - 0.5) * 12;
 
       positions[i3] = Math.cos(angle) * radius;
-      positions[i3 + 1] = Math.sin(angle) * radius * 0.6; // Create an elliptical shape
+      positions[i3 + 1] = Math.sin(angle) * radius * 0.6; // Elliptical shape
       positions[i3 + 2] = z;
 
+      // Color assignment
       const paletteIndex = Math.floor(Math.random() * this.palette.length);
       this.colorIndices[i] = paletteIndex;
       this.palette[paletteIndex].toArray(colors, i3);
+      this.palette[paletteIndex].toArray(this.originalColors, i3); // Store original colors
+
+      // Floating motion: random upward velocity (0.1 to 0.8 units per second)
+      this.particleVelocities[i] = (Math.random() * 0.7 + 0.1) * config.velocityScale;
+      
+      // Breathing/twinkling: random phase offset for each particle
+      this.particlePhases[i] = Math.random() * Math.PI * 2;
+      
+      // Size variation: base size with some variation
+      const baseSize = 0.06 + Math.random() * 0.06; // 0.06 to 0.12
+      this.particleSizes[i] = baseSize;
+      sizes[i] = baseSize;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     const material = new THREE.PointsMaterial({
-      size: 0.09,
+      size: 0.09, // This becomes the base size, individual sizes will vary
       map: new THREE.CanvasTexture(this.generateParticleTexture()),
       blending: THREE.NormalBlending,
       depthWrite: false,
@@ -149,31 +273,30 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   }
 
   private createSparkles(): void {
-    const sparkleCount = 220;
+    // Get mode-specific configuration
+    const config = this.modeConfig[this.mode];
+    this.sparkleCount = config.sparkleCount;
+
     const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(sparkleCount * 3);
-    const colors = new Float32Array(sparkleCount * 3);
+    const positions = new Float32Array(this.sparkleCount * 3);
+    const colors = new Float32Array(this.sparkleCount * 3);
 
-    const sparklePalette = [
-      new THREE.Color(this.accent || '#a78bfa'),
-      new THREE.Color('#ffffff')
-    ];
+    this.generateSparkleColors(colors);
 
-    for (let i = 0; i < sparkleCount; i++) {
+    for (let i = 0; i < this.sparkleCount; i++) {
       const i3 = i * 3;
       positions[i3] = (Math.random() - 0.5) * 14;
       positions[i3 + 1] = (Math.random() - 0.5) * 9;
       positions[i3 + 2] = (Math.random() - 0.5) * 8;
-      sparklePalette[Math.floor(Math.random() * sparklePalette.length)].toArray(colors, i3);
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const material = new THREE.PointsMaterial({
-      size: 0.2,
+      size: this.mode === 'hero' ? 0.2 : 0.15, // Slightly smaller sparkles in section mode
       transparent: true,
-      opacity: 0.7,
+      opacity: this.mode === 'hero' ? 0.7 : 0.5, // Dimmer sparkles in section mode
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
@@ -183,6 +306,26 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
 
     this.sparkles = new THREE.Points(geometry, material);
     this.scene.add(this.sparkles);
+  }
+
+  private generateSparkleColors(colors: Float32Array): void {
+    // Use theme-aware sparkle palette with brighter accent tones
+    const base = new THREE.Color(this.accent || '#a78bfa');
+    const bright = base.clone().lerp(new THREE.Color('#ffffff'), 0.4); // Brighter than regular palette
+    const sparklePalette = [base, bright, new THREE.Color('#ffffff')];
+
+    for (let i = 0; i < this.sparkleCount; i++) {
+      const i3 = i * 3;
+      const colorIndex = Math.floor(Math.random() * sparklePalette.length);
+      sparklePalette[colorIndex].toArray(colors, i3);
+    }
+  }
+
+  private recolorSparkles(): void {
+    if (!this.sparkles) return;
+    const colors = (this.sparkles.geometry.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
+    this.generateSparkleColors(colors);
+    (this.sparkles.geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
   }
 
   private updatePalette(): void {
@@ -197,11 +340,16 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   }
 
   private recolorParticles(): void {
+    if (!this.particles || !this.originalColors) return;
+    
     const colors = (this.particles.geometry.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
     for (let i = 0; i < this.colorIndices.length; i++) {
       const i3 = i * 3;
       const paletteIndex = this.colorIndices[i] % this.palette.length;
+      
+      // Update both current colors and original colors for breathing effect
       this.palette[paletteIndex].toArray(colors, i3);
+      this.palette[paletteIndex].toArray(this.originalColors, i3);
     }
     (this.particles.geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
   }
@@ -219,7 +367,10 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   private animate = (): void => {
     this.animationFrameId = requestAnimationFrame(this.animate);
 
+    const deltaTime = this.clock.getDelta(); // Use delta time for frame-rate independent animation
     const elapsedTime = this.clock.getElapsedTime();
+    
+    // Original rotation animation
     this.particles.rotation.y = elapsedTime * 0.05;
     this.particles.rotation.z = elapsedTime * 0.03;
 
@@ -228,6 +379,10 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     this.scene.position.x = this.parallax.x * 0.5;
     this.scene.position.y = this.parallax.y * 0.35;
 
+    // Update floating particle motion and breathing effects
+    this.updateParticleFloating(deltaTime, elapsedTime);
+
+    // Original swap animation (preserve existing functionality)
     if (this.swapState.active) {
       const now = performance.now() / 1000;
       const t = (now - this.swapState.start) / this.swapState.duration;
@@ -249,21 +404,76 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
       }
     }
 
-    // Sparkle twinkle
+    // Enhanced sparkle animation with parallax
     if (this.sparkles) {
       const mat = this.sparkles.material as THREE.PointsMaterial;
-      mat.opacity = 0.4 + Math.sin(elapsedTime * 1.8) * 0.25;
+      const baseSparkleOpacity = this.mode === 'hero' ? 0.7 : 0.5;
+      mat.opacity = baseSparkleOpacity * (0.6 + Math.sin(elapsedTime * 1.8) * 0.4);
       this.sparkles.rotation.z = elapsedTime * 0.02;
+      
+      // Additional sparkle parallax (subtle)
+      this.sparkles.position.x = this.parallax.x * 0.2;
+      this.sparkles.position.y = this.parallax.y * 0.15;
     }
 
     this.renderer.render(this.scene, this.camera);
   }
 
+  private updateParticleFloating(deltaTime: number, elapsedTime: number): void {
+    if (!this.particles || !this.particleVelocities) return;
+
+    const positions = (this.particles.geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
+    const colors = (this.particles.geometry.getAttribute('color') as THREE.BufferAttribute).array as Float32Array;
+    const config = this.modeConfig[this.mode];
+
+    for (let i = 0; i < this.particleCount; i++) {
+      const i3 = i * 3;
+      const posY = i3 + 1; // Y position index
+
+      // 1. Floating motion: move particles upward
+      positions[posY] += this.particleVelocities[i] * deltaTime;
+
+      // 2. Respawn particles that float too high
+      if (positions[posY] > 6) { // Upper boundary
+        // Reset to bottom with new random properties
+        const radius = (Math.random() ** 2) * 8 + 1;
+        const angle = Math.random() * Math.PI * 2;
+        
+        positions[i3] = Math.cos(angle) * radius;     // X position
+        positions[posY] = -4 - Math.random() * 2;     // Y position (bottom)
+        positions[i3 + 2] = (Math.random() - 0.5) * 12; // Z position
+        
+        // Assign new velocity and phase
+        this.particleVelocities[i] = (Math.random() * 0.7 + 0.1) * config.velocityScale;
+        this.particlePhases[i] = Math.random() * Math.PI * 2;
+        
+        // Assign new color
+        const paletteIndex = Math.floor(Math.random() * this.palette.length);
+        this.colorIndices[i] = paletteIndex;
+        this.palette[paletteIndex].toArray(this.originalColors, i3);
+      }
+
+      // 3. Breathing/twinkling effect: modulate color brightness
+      const twinklePhase = elapsedTime * 0.8 + this.particlePhases[i]; // Slow twinkling
+      const brightness = 0.6 + config.twinkleAmplitude * Math.sin(twinklePhase);
+      
+      // Apply brightness to original color
+      colors[i3] = this.originalColors[i3] * brightness;         // R
+      colors[i3 + 1] = this.originalColors[i3 + 1] * brightness; // G
+      colors[i3 + 2] = this.originalColors[i3 + 2] * brightness; // B
+    }
+
+    // Mark attributes as needing update
+    (this.particles.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    (this.particles.geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
+  }
+
   private onWindowResize = (): void => {
     this.ngZone.runOutsideAngular(() => {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        const dimensions = this.getCanvasDimensions();
+        this.camera.aspect = dimensions.width / dimensions.height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(dimensions.width, dimensions.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
   }

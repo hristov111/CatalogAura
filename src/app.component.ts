@@ -6,6 +6,7 @@ import { ProfileCardComponent } from './components/profile-card/profile-card.com
 import { ProfileDetailComponent } from './components/profile-detail/profile-detail.component';
 import { ParticleBackgroundComponent } from './components/particle-background/particle-background.component';
 import { IntroParticlesComponent } from './components/intro-particles/intro-particles.component';
+import { WhyBetterSectionComponent } from './components/why-better-section/why-better-section.component';
 import { Profile } from './profile.model';
 
 const HERO_COPY_SETS = [
@@ -26,7 +27,7 @@ const HERO_COPY_SETS = [
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, NgOptimizedImage, HeaderComponent, ProfileCardComponent, ProfileDetailComponent, ParticleBackgroundComponent, IntroParticlesComponent],
+  imports: [CommonModule, NgOptimizedImage, HeaderComponent, ProfileCardComponent, ProfileDetailComponent, ParticleBackgroundComponent, IntroParticlesComponent, WhyBetterSectionComponent],
 })
 export class AppComponent implements OnInit, OnDestroy {
   

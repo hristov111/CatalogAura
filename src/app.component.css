@@ -24,6 +24,20 @@
   animation-delay: 0.7s;
 }
 
+.hero-privacy {
+  /* Container opacity is managed by children now, but we keep this for legacy or if we want group fade */
+  opacity: 1 !important; 
+}
+
+.privacy-badge {
+  opacity: 0;
+  animation: heroFadeSlide 0.7s ease both;
+}
+
+.hero-privacy .privacy-badge:nth-child(1) { animation-delay: 0.9s; }
+.hero-privacy .privacy-badge:nth-child(2) { animation-delay: 1.0s; }
+.hero-privacy .privacy-badge:nth-child(3) { animation-delay: 1.1s; }
+
 /* Right column staggered animations */
 .right-col-item {
   animation: heroFadeSlide 0.7s ease both;
@@ -269,7 +283,8 @@
   .cta-text,
   .glass-highlight::before,
   .cta-call-primary,
-  .hero-transition-wrapper {
+  .hero-transition-wrapper,
+  .hero-privacy {
     transition-duration: 0.3s;
     animation: none;
   }
