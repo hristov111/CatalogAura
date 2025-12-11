@@ -18,8 +18,47 @@
 /* Hide empty text elements to prevent layout space when not animated */
 h2 span:empty,
 p:empty {
-  display: none;
+  opacity: 0;
 }
+
+h2 span, p {
+  transition: opacity 0.3s ease;
+}
+
+/* Caret blinking animation */
+.caret {
+  display: inline-block;
+  width: 4px;
+  height: 1em;
+  background-color: currentColor;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Emotional heartbeat glow animation */
+.emotional-pulse {
+  display: inline-block; /* Ensure transform works */
+  animation: heartbeat-glow 3s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+@keyframes heartbeat-glow {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(var(--accent-rgb), 0));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
+  }
+}
+
 
 /* Feature card base styles */
 .feature-card {
@@ -50,17 +89,17 @@ p:empty {
 
 /* Staggered card drop animations */
 .animate-card-drop-1 {
-  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: 0.10s;
 }
 
 .animate-card-drop-2 {
-  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: 0.30s;
 }
 
 .animate-card-drop-3 {
-  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: cardDrop 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
   animation-delay: 0.50s;
 }
 
@@ -196,4 +235,30 @@ button:focus {
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+}
+
+/* Orbit Ring Animation */
+@keyframes orbit-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orbit-ring {
+  position: absolute;
+  inset: -30px; /* Extend outward */
+  border-radius: 50%; /* Create an ellipse based on container aspect ratio */
+  border: 1px solid rgba(var(--accent-rgb), 0.1); /* Subtle base ring */
+  border-top: 2px solid rgba(var(--accent-rgb), 0.6); /* Highlights for rotation visibility */
+  border-right: 1px solid rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.15); /* Soft glow */
+  
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.5s ease-in-out;
+  z-index: 0;
+}
+
+.orbit-ring.visible {
+  opacity: 1;
+  animation: orbit-rotate 10s linear infinite;
 }

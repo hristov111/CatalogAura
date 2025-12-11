@@ -20,13 +20,18 @@
     <!-- SECTION 1: Header -->
     <div class="pt-24 pb-16 text-center max-w-4xl mx-auto">
       <h2 class="text-4xl md:text-5xl lg:text-6xl font-light mb-8 leading-tight" [ngStyle]="{ 'color': safeTheme.text }">
-        <span class="bg-clip-text text-transparent font-medium" [ngStyle]="{ 'background-image': `linear-gradient(to right, ${safeTheme.accent}, ${safeTheme.btnBg}, ${safeTheme.accent})` }">
-          {{ displayHeadline }}
+        <span class="bg-clip-text text-transparent font-medium" 
+              [class.emotional-pulse]="headlineTypingComplete"
+              [ngStyle]="{ 'background-image': `linear-gradient(to right, ${safeTheme.accent}, ${safeTheme.btnBg}, ${safeTheme.accent})` }">
+          {{ displayHeadline }}<span *ngIf="typingStarted && !headlineTypingComplete" class="caret" [ngStyle]="{ 'color': safeTheme.accent }">&nbsp;</span>
         </span>
       </h2>
-      <p class="text-lg md:text-xl leading-relaxed max-w-3xl mx-auto" [ngStyle]="{ 'color': safeTheme.muted }">
-        {{ displaySubheadline }}
-      </p>
+      <div class="relative max-w-3xl mx-auto" [style.--accent-rgb]="safeTheme.accentRGB">
+        <div class="orbit-ring" [class.visible]="subheadlineTypingComplete"></div>
+        <p class="relative z-10 text-lg md:text-xl leading-relaxed" [ngStyle]="{ 'color': safeTheme.muted }">
+          {{ displaySubheadline }}<span *ngIf="headlineTypingComplete && !subheadlineTypingComplete" class="caret" [ngStyle]="{ 'color': safeTheme.accent }">&nbsp;</span>
+        </p>
+      </div>
     </div>
 
     <!-- SECTION 2: Value Pillars -->
