@@ -1,0 +1,39 @@
+<section class="relative py-24 bg-black/10">
+  <div class="container mx-auto px-6 lg:px-8 max-w-4xl relative z-10">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-4xl font-light mb-4" style="color: var(--text)">
+        Common <span class="font-medium" style="color: var(--accent)">Questions</span>
+      </h2>
+      <p class="text-lg" style="color: var(--muted)">Everything you need to know about your companion.</p>
+    </div>
+
+    <div class="space-y-4">
+      <div 
+        *ngFor="let faq of faqs; let i = index"
+        class="border border-[var(--accent-soft)] rounded-xl overflow-hidden bg-[rgba(var(--surface-rgb),0.3)] backdrop-blur-sm transition-all duration-300 hover:bg-[rgba(var(--surface-rgb),0.5)]"
+      >
+        <button 
+          (click)="toggle(i)"
+          class="w-full flex items-center justify-between p-6 text-left focus:outline-none"
+        >
+          <span class="text-lg font-medium" style="color: var(--text)">{{ faq.question }}</span>
+          <span class="ml-4 flex-shrink-0 transition-transform duration-300" [class.rotate-180]="openIndex === i">
+            <svg class="w-5 h-5" [style.color]="theme?.accent || 'currentColor'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </button>
+        
+        <div 
+          class="overflow-hidden transition-[max-height] duration-500 ease-in-out"
+          [style.max-height]="openIndex === i ? '200px' : '0px'"
+        >
+          <div class="px-6 pb-6 pt-0 text-base leading-relaxed" style="color: var(--muted)">
+            {{ faq.answer }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+

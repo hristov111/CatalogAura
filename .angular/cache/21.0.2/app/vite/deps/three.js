@@ -1,7 +1,7 @@
 import {
   __spreadProps,
   __spreadValues
-} from "./chunk-GOMI4DH3.js";
+} from "./chunk-R327OCYJ.js";
 
 // node_modules/three/build/three.module.js
 var REVISION = "166";

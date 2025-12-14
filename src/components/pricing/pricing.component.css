@@ -1,0 +1,7 @@
+/* Glassmorphic card hover effects are handled via Tailwind classes in HTML 
+   Additional specific styles if needed */
+
+.group:hover {
+    z-index: 20;
+}
+

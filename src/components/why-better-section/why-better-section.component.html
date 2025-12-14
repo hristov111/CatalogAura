@@ -39,9 +39,9 @@
       <div class="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
         <div 
           *ngFor="let pillar of valuePillars; let i = index; trackBy: trackByTitle" 
-          class="group relative backdrop-blur-sm rounded-2xl px-8 py-10 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_20px_60px_-10px_var(--hover-shadow-color)] feature-card"
-          (mouseenter)="onCardHover(i)"
-          (mouseleave)="onCardLeave(i)"
+          (click)="onCardClick(i)"
+          [class.card-active-anim]="clickedCardIndex === i"
+          class="group relative backdrop-blur-sm rounded-2xl px-8 py-10 transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_20px_60px_-10px_var(--hover-shadow-color)] feature-card cursor-pointer tap-highlight-transparent"
           [ngStyle]="{  
             'background-color': getCardBackground(),
             'border': '1px solid ' + getCardBorder(),
@@ -60,36 +60,73 @@
               <img
                 src="/assets/pictures/brain.png"
                 alt="Emotional intelligence visualization"
-                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out group-hover:opacity-0"
+                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out"
+                [class.opacity-0]="cardsSettled"
               />
               <video
                 #videoPlayer
                 src="/assets/videos/brain.mp4"
-                autoplay
                 muted
                 loop
                 playsinline
                 preload="auto"
-                class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700 ease-in-out group-hover:opacity-100"
+                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out opacity-0"
+                [class.opacity-100]="cardsSettled"
+              ></video>
+            </div>
+
+            <!-- Media for second card (Privacy) -->
+            <div *ngIf="i === 1" class="relative mb-6 rounded-xl overflow-hidden h-40 w-full shadow-lg">
+              <video
+                #videoPlayer
+                src="/assets/videos/ready.mp4"
+                muted
+                loop
+                playsinline
+                preload="auto"
+                class="absolute inset-0 w-full h-full object-cover"
+              ></video>
+            </div>
+
+            <!-- Media for third card (Values) -->
+            <div *ngIf="i === 2" class="relative mb-6 rounded-xl overflow-hidden h-40 w-full shadow-lg">
+              <video
+                #videoPlayer
+                src="/assets/videos/badge3.mp4"
+                muted
+                loop
+                playsinline
+                preload="auto"
+                class="absolute inset-0 w-full h-full object-cover"
               ></video>
             </div>
 
             <!-- Emoji for other cards -->
-            <div *ngIf="i !== 0" class="text-5xl mb-6 group-hover:scale-110 transition-transform duration-300">
+            <div *ngIf="i > 2" class="text-5xl mb-6 group-hover:scale-110 transition-transform duration-300">
               {{ pillar.icon }}
             </div>
 
-            <h3 class="text-xl md:text-2xl font-semibold mb-4 leading-tight" [ngStyle]="{ 'color': safeTheme.text }">
+            <h3 class="text-xl md:text-2xl font-semibold mb-4 leading-tight transform opacity-0 translate-y-4 transition-all duration-500 ease-out cursor-default"
+                [class.opacity-100]="cardsSettled"
+                [class.translate-y-0]="cardsSettled"
+                [ngStyle]="{ 'color': safeTheme.text }">
               {{ pillar.title }}
             </h3>
-            <p class="leading-relaxed" [ngStyle]="{ 'color': safeTheme.muted }">
-              {{ pillar.description }}
-            </p>
+            <div class="space-y-1">
+              <p *ngFor="let sentence of pillar.sentences; let sIdx = index"
+                 class="leading-relaxed transform opacity-0 translate-y-4 transition-all duration-500 ease-out"
+                 [class.opacity-100]="cardsSettled"
+                 [class.translate-y-0]="cardsSettled"
+                 [ngStyle]="{ 'color': safeTheme.muted }"
+                 [style.transition-delay.ms]="(sIdx + 1) * 150">
+                {{ sentence }}
+              </p>
+            </div>
           </div>
           
           <!-- Subtle glow effect -->
           <div
-            class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" 
+            class="glow-layer absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" 
             [ngStyle]="{ 'background': 'linear-gradient(to right, ' + getParticleGlow(0.1) + ', ' + getParticleGlow(0.15) + ')' }"
           ></div>
         </div>
@@ -98,94 +135,200 @@
     
 
     <!-- SECTION 3: Use Case Grid -->
-    <div class="pb-20">
+    <div class="pb-20" #useCaseGrid>
       <div class="grid lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
         <div 
-          *ngFor="let useCase of useCases; trackBy: trackByTitle" 
-          class="group backdrop-blur-sm rounded-xl p-6 md:p-8 transition-all duration-300 hover:shadow-xl use-case-fade-in"
-          [ngStyle]="{ 
-            'background-color': getCardBackground(),
-            'border': `1px solid ${getCardBorder()}`,
-            '--hover-bg': getCardHoverBackground(),
-            '--hover-shadow-color': getGlowColor()
-          }"
-          [class]="'hover:shadow-[0_10px_40px_-10px_var(--hover-shadow-color)] hover:bg-[var(--hover-bg)]'"
+          *ngFor="let useCase of useCases; let i = index; trackBy: trackByTitle" 
+          class="group relative overflow-hidden rounded-2xl p-8 transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl use-case-fade-in themed-card cursor-pointer tap-highlight-transparent"
+          [style.--surface-rgb]="safeTheme.surfaceRGB"
+          [style.--bg-end-rgb]="safeTheme.accentRGB"
+          [style.--accent-rgb]="safeTheme.accentRGB"
         >
-          <!-- Tag -->
-          <div class="inline-flex items-center px-3 py-1 rounded-full mb-4" 
-               [ngStyle]="{ 
-                 'background-color': getTagBackground(),
-                 'border': `1px solid ${getTagBorder()}`
-               }">
-            <span class="text-xs font-medium uppercase tracking-wider" [ngStyle]="{ 'color': safeTheme.accent }">
-              {{ useCase.tag }}
-            </span>
+          <!-- Cinematic Particle Canvas -->
+          <canvas #cardCanvas class="absolute inset-0 w-full h-full opacity-60 pointer-events-none"></canvas>
+          
+          <!-- Inner Glow & Gradient -->
+          <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
+
+          <div class="relative z-10 flex flex-col h-full">
+            <!-- Tag -->
+            <div class="self-start mb-6">
+              <span #useCaseTag class="inline-block px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-wider border backdrop-blur-md cursor-default transition-colors duration-300"
+                    [ngStyle]="{
+                      'border-color': 'rgba(' + safeTheme.accentRGB + ', 0.2)',
+                      'color': safeTheme.accent,
+                      'background-color': 'rgba(' + safeTheme.accentRGB + ', 0.1)'
+                    }"
+                    (mouseenter)="scrambleText($event, useCase.tag)">
+                {{ useCase.tag }}
+              </span>
+            </div>
+
+            <!-- Title -->
+            <h4 #useCaseTitle class="text-xl md:text-2xl font-semibold mb-4 leading-tight cursor-default transform translate-y-0 transition-all duration-500 ease-out" 
+                [ngStyle]="{ 'color': safeTheme.text }"
+                (mouseenter)="scrambleText($event, useCase.title)">
+              {{ useCase.title }}
+            </h4>
+
+            <!-- Description -->
+            <p class="mb-8 leading-relaxed transform translate-y-0 transition-all duration-500 ease-out"
+               [ngStyle]="{ 'color': safeTheme.muted }">
+              {{ useCase.description }}
+            </p>
+
+            <!-- Benefits List -->
+            <ul class="space-y-3 mb-8 flex-grow">
+              <li *ngFor="let benefit of useCase.benefits; let bIdx = index" 
+                  class="flex items-start text-sm md:text-base group/item"
+                  [ngStyle]="{ 'color': safeTheme.muted }">
+                <span class="bullet-icon inline-block mr-3 mt-1 transition-transform duration-300 group-hover/item:scale-110"
+                      [ngStyle]="{ 'color': safeTheme.accent }">
+                  <ng-container [ngSwitch]="bIdx">
+                    <span *ngSwitchCase="0">✿</span>
+                    <span *ngSwitchCase="1">♛</span>
+                    <span *ngSwitchCase="2">☯</span>
+                    <span *ngSwitchDefault>✦</span>
+                  </ng-container>
+                </span>
+                {{ benefit }}
+              </li>
+            </ul>
+
+            <!-- Bottom Row: CTA & Sparkle -->
+            <div class="flex items-center justify-between mt-auto pt-4 border-t"
+                 [ngStyle]="{ 'border-color': 'rgba(' + safeTheme.accentRGB + ', 0.1)' }">
+              <button class="text-sm font-medium transition-all duration-300 group-hover:translate-x-1 flex items-center gap-2"
+                      [ngStyle]="{ 'color': safeTheme.accent }">
+                <span class="border-b border-transparent group-hover:border-current">{{useCase.CTA}}</span>
+                <span>→</span>
+              </button>
+              
+              <!-- Sparkle Icon -->
+              <div class="transition-colors duration-500 transform group-hover:rotate-90"
+                   [ngStyle]="{ 'color': 'rgba(' + safeTheme.accentRGB + ', 0.4)' }">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                </svg>
+              </div>
+            </div>
           </div>
-
-          <!-- Title -->
-          <h4 class="text-xl md:text-2xl font-semibold mb-3" [ngStyle]="{ 'color': safeTheme.text }">
-            {{ useCase.title }}
-          </h4>
-
-          <!-- Description -->
-          <p class="mb-6 leading-relaxed" [ngStyle]="{ 'color': safeTheme.muted }">
-            {{ useCase.description }}
-          </p>
-
-          <!-- Benefits List -->
-          <ul class="space-y-2 mb-4">
-            <li 
-              *ngFor="let benefit of useCase.benefits" 
-              class="flex items-start text-sm"
-              [ngStyle]="{ 'color': safeTheme.muted }"
-            >
-              <div class="w-1.5 h-1.5 rounded-full mr-3 mt-2 flex-shrink-0" [ngStyle]="{ 'background-color': safeTheme.accent }"></div>
-              {{ benefit }}
-            </li>
-          </ul>
-
-          <!-- Optional CTA -->
-          <button class="text-sm font-medium transition-colors duration-200 group-hover:translate-x-1 transform" 
-                  [ngStyle]="{ 'color': safeTheme.accent }"
-                  [class]="'hover:brightness-110'">
-            Try it now →
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- SECTION 4: Social Proof Strip -->
-    <div class="text-center max-w-md mx-auto mt-20 mb-20 social-proof-fade-in">
-      <!-- Stars -->
-      <div class="flex justify-center mb-4 space-x-1">
-        <svg 
-          *ngFor="let star of stars" 
-          class="w-5 h-5 fill-current animate-glow" 
-          viewBox="0 0 20 20"
-          [ngStyle]="{ 'color': safeTheme.accent }"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    <!-- SECTION 4 & 5 WRAPPER -->
+    <div class="relative mt-20">
+      <!-- Animated SVG Overlay -->
+      <div class="absolute inset-0 pointer-events-none z-0 overflow-visible" aria-hidden="true">
+        <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+          <defs>
+            <filter id="glow-filter" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <linearGradient id="stroke-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" [attr.stop-color]="safeTheme.accent" stop-opacity="0" />
+              <stop offset="20%" [attr.stop-color]="safeTheme.accent" stop-opacity="1" />
+              <stop offset="80%" [attr.stop-color]="safeTheme.accent" stop-opacity="1" />
+              <stop offset="100%" [attr.stop-color]="safeTheme.accent" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+
+          <!-- Left Path: Continuous path for uniform speed -->
+          <!-- To ensure constant speed visually, the path length distribution matters. -->
+          <!-- Vertical: 25u. Arc: ~15u. Horiz: ~40u. Vert: 75u. Bottom: ~50u. Total ~200u -->
+          <!-- Path length is normalized to 1 via attribute. -->
+          <path 
+            d="M 50 0 L 50 25 Q 50 35 40 35 L 10 35 Q 0 35 0 45 L 0 90 Q 0 100 10 100 L 50 100" 
+            fill="none" 
+            stroke="url(#stroke-gradient)" 
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+            pathLength="1"
+            class="anim-path"
+            [class.animate-draw]="isStrokeAnimating"
+            filter="url(#glow-filter)"
+          />
+          
+          <!-- Right Path: Symmetric -->
+          <path 
+            d="M 50 0 L 50 25 Q 50 35 60 35 L 90 35 Q 100 35 100 45 L 100 90 Q 100 100 90 100 L 50 100" 
+            fill="none" 
+            stroke="url(#stroke-gradient)" 
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+            pathLength="1"
+            class="anim-path"
+            [class.animate-draw]="isStrokeAnimating"
+            filter="url(#glow-filter)"
+          />
         </svg>
       </div>
 
-      <!-- Quote -->
-      <blockquote class="text-lg md:text-xl italic mb-4 leading-relaxed" [ngStyle]="{ 'color': safeTheme.text }">
-        "More present and comforting than any AI companion I've tried."
-      </blockquote>
-
-      <!-- Attribution -->
-      <p class="text-sm" [ngStyle]="{ 'color': safeTheme.muted }">
-        — Verified User
-      </p>
-    </div>
-
-    <!-- SECTION 5: Final CTA -->
-    <div class="text-center pb-24 final-cta-fade-in">
+      <!-- SECTION 4: Social Proof Carousel -->
+      <div class="relative max-w-2xl mx-auto mb-20 social-proof-fade-in min-h-[14rem] flex items-center justify-center"
+           (mouseenter)="onReviewHover()" 
+           (mouseleave)="onReviewLeave()">
+        
+        <div *ngFor="let review of reviews; let i = index" 
+             class="absolute inset-x-0 flex flex-col items-center justify-center transition-opacity duration-1000 ease-in-out px-4"
+             [class.opacity-0]="i !== currentReviewIndex"
+             [class.opacity-100]="i === currentReviewIndex"
+             [class.pointer-events-none]="i !== currentReviewIndex"
+             [class.z-10]="i === currentReviewIndex"
+             role="group" 
+             [attr.aria-label]="'Review ' + (i + 1) + ' of ' + reviews.length">
+             
+          <!-- Stars -->
+          <div class="flex justify-center mb-6 space-x-1">
+            <svg 
+              *ngFor="let star of stars" 
+              class="w-5 h-5 fill-current animate-glow" 
+              viewBox="0 0 20 20"
+              [ngStyle]="{ 'color': safeTheme.accent }"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+          </div>
+  
+          <!-- Quote -->
+          <blockquote class="text-xl md:text-2xl italic mb-6 leading-relaxed text-center" [ngStyle]="{ 'color': safeTheme.text }">
+            "{{ review.text }}"
+          </blockquote>
+  
+          <!-- Attribution -->
+          <p class="text-sm font-medium tracking-wider uppercase opacity-80" [ngStyle]="{ 'color': safeTheme.muted }">
+            — {{ review.author }}
+          </p>
+        </div>
+      </div>
+  
+      <!-- SECTION 5: Final CTA -->
+      <div class="text-center pb-24 final-cta-fade-in" #ctaSection>
       <div class="max-w-2xl mx-auto">
         <h3 class="text-3xl md:text-4xl lg:text-5xl font-light mb-6 leading-tight" [ngStyle]="{ 'color': safeTheme.text }">
           Find a 
           <span class="bg-clip-text text-transparent font-medium" [ngStyle]="{ 'background-image': `linear-gradient(to right, ${safeTheme.accent}, ${safeTheme.btnBg})` }">
-            Companion Tailored to You
+            Companion 
+          </span>
+          <!-- Flip Container -->
+          <span class="flip-container inline-block align-bottom relative" [class.flipped]="flipAnimated">
+             <span class="flip-inner block w-full h-full relative transition-transform duration-[800ms] ease-in-out preserve-3d">
+                <!-- Front: Defines dimensions -->
+                <span class="flip-front block backface-hidden bg-clip-text text-transparent font-medium" 
+                      [ngStyle]="{ 'background-image': `linear-gradient(to right, ${safeTheme.accent}, ${safeTheme.btnBg})` }">
+                   Tailored to You
+                </span>
+                <!-- Back: Absolute -->
+                <span class="flip-back block backface-hidden rotate-x-180 bg-clip-text text-transparent font-medium whitespace-nowrap" 
+                      [ngStyle]="{ 'background-image': `linear-gradient(to right, ${safeTheme.accent}, ${safeTheme.btnBg})` }">
+                   Someone who listens
+                </span>
+             </span>
           </span>
         </h3>
         
@@ -194,19 +337,45 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <!-- Primary CTA -->
-          <button class="group relative inline-flex items-center px-8 py-4 rounded-full font-semibold text-lg hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  [ngStyle]="{ 
-                    'background': getButtonGradient(),
-                    'color': safeTheme.btnText,
-                    '--hover-shadow-color': getGlowColor(),
-                    '--focus-color': safeTheme.accent
-                  }"
-                  [class]="'hover:shadow-[0_20px_60px_-10px_var(--hover-shadow-color)] focus:ring-[var(--focus-color)] focus:ring-offset-[' + safeTheme.bgStart + ']'">
-            <span class="relative z-10">Meet Your Companion</span>
-            <div class="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
-                 [ngStyle]="{ 'background': `linear-gradient(to right, ${safeTheme.btnBg}, ${safeTheme.accent})` }"></div>
-          </button>
+          <!-- Primary CTA - Animated Generate Button -->
+          <div class="btn-wrapper">
+            <button class="btn" [style.--theme-accent-rgb]="safeTheme.accentRGB">
+              <svg class="btn-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                ></path>
+              </svg>
+
+              <div class="txt-wrapper">
+                <div class="txt-1">
+                  <span class="btn-letter">M</span>
+                  <span class="btn-letter">e</span>
+                  <span class="btn-letter">e</span>
+                  <span class="btn-letter">t</span>
+                  <span class="btn-letter">&nbsp;</span>
+                  <span class="btn-letter">Y</span>
+                  <span class="btn-letter">o</span>
+                  <span class="btn-letter">u</span>
+                  <span class="btn-letter">r</span>
+                  <span class="btn-letter">s</span>
+                </div>
+                <div class="txt-2">
+                  <span class="btn-letter">C</span>
+                  <span class="btn-letter">o</span>
+                  <span class="btn-letter">n</span>
+                  <span class="btn-letter">n</span>
+                  <span class="btn-letter">e</span>
+                  <span class="btn-letter">c</span>
+                  <span class="btn-letter">t</span>
+                  <span class="btn-letter">i</span>
+                  <span class="btn-letter">n</span>
+                  <span class="btn-letter">g</span>
+                </div>
+              </div>
+            </button>
+          </div>
 
           <!-- Secondary CTA -->
           <button class="font-medium transition-colors duration-200 hover:underline hover:brightness-110" 
@@ -216,6 +385,8 @@
         </div>
       </div>
     </div>
+    
+    </div> <!-- End Section 4 & 5 Wrapper -->
 
   </div>
 </section>

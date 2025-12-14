@@ -65,6 +65,28 @@ h2 span, p {
   will-change: transform, opacity;
 }
 
+/* Springy press animation */
+@keyframes card-press {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.96); } /* Dip down */
+  100% { transform: scale(1); }   /* Bounce back */
+}
+
+.card-active-anim {
+  animation: card-press 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* When active, force the glow layer to be visible and slightly brighter */
+.card-active-anim .glow-layer {
+  opacity: 1 !important;
+  transition: opacity 0.1s ease-out; /* Instant on */
+  filter: brightness(1.5); /* Burst of light */
+}
+
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Hidden state before animation */
 .card-hidden {
   opacity: 0;
@@ -195,14 +217,37 @@ h2 span, p {
   animation: fade-in-up 0.8s ease-out 1s forwards;
 }
 
-/* Custom gradient backgrounds */
-.bg-gradient-cosmic {
-  background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #0f172a 100%);
+/* Themed Glassmorphism Card */
+.themed-card {
+  background: linear-gradient(135deg, rgba(var(--surface-rgb), 0.6) 0%, rgba(var(--bg-end-rgb), 0.4) 100%);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  box-shadow: 
+    0 4px 20px -5px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(var(--accent-rgb), 0.05);
+  transition: all 0.5s ease;
 }
 
-/* Glassmorphism enhancements */
-.backdrop-blur-sm {
-  backdrop-filter: blur(8px);
+.themed-card:hover {
+  background: linear-gradient(135deg, rgba(var(--surface-rgb), 0.7) 0%, rgba(var(--bg-end-rgb), 0.5) 100%);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(var(--accent-rgb), 0.2),
+    inset 0 0 30px rgba(var(--accent-rgb), 0.1);
+  transform: scale(1.01);
+}
+
+/* Match Section 2 Font Styles */
+.themed-card h4 {
+  /* text-xl md:text-2xl font-semibold leading-tight */
+  /* These are Tailwind defaults, explicitly setting to ensure match if Tailwind varies */
+  font-weight: 600; 
+  line-height: 1.25;
+}
+
+.themed-card p {
+  /* leading-relaxed */
+  line-height: 1.625;
 }
 
 /* Responsive typography improvements */
@@ -261,4 +306,515 @@ html {
 .orbit-ring.visible {
   opacity: 1;
   animation: orbit-rotate 10s linear infinite;
+}
+
+/* 
+  Bullet Point Spin Animation 
+  For Section 3 bullet icons on card hover/tap
+*/
+@keyframes spin-once {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 
+     Trigger animation when parent .group (card) is hovered.
+     Target .bullet-icon.
+  */
+  .group:hover .bullet-icon {
+    animation: spin-once 0.6s cubic-bezier(0.4, 0.0, 0.2, 1); /* Smooth standard easing */
+    /* animation-iteration-count default is 1, which matches "once per interaction" */
+  }
+}
+
+/* 3D Flip Animation */
+.flip-container {
+  perspective: 1000px;
+  display: inline-grid;
+  vertical-align: bottom;
+}
+
+.flip-inner {
+  transform-style: preserve-3d;
+  display: grid;
+  grid-template-areas: "stack";
+  align-items: center;
+  justify-items: center;
+}
+
+.flip-container.flipped .flip-inner {
+  transform: rotateX(180deg);
+}
+
+.flip-front,
+.flip-back {
+  grid-area: stack;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  width: max-content;
+}
+
+.rotate-x-180 {
+  transform: rotateX(180deg);
+}
+
+/* Backface specific style to better match flow */
+.flip-back {
+  /* Ensure visibility */
+  transform: rotateX(180deg);
+  position: relative;
+}
+
+/* Wavy underline svg animation */
+.flip-back::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 6px;
+  /* Use currentColor for stroke color to match text/accent */
+  /* We encode the SVG but can't easily use dynamic currentColor in data URI without mask trickery or CSS vars if supported in SVG data URI (often not). 
+     Instead, we use the theme accent color hardcoded or use mask-image with background-color.
+     Better approach: Use background-color with mask-image of the wavy line.
+  */
+  background-color: var(--accent, #10b981); 
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='40' height='8' viewBox='0 0 40 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4C5 4 8 2 11 2C14 2 17 6 20 6C23 6 26 2 29 2C32 2 35 6 38 6' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg width='40' height='8' viewBox='0 0 40 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 4C5 4 8 2 11 2C14 2 17 6 20 6C23 6 26 2 29 2C32 2 35 6 38 6' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  -webkit-mask-size: 20px 100%;
+  mask-size: 20px 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  
+  /* Use clip-path to animate the "writing" effect left to right */
+  clip-path: polygon(0 0, 0 100%, 0 100%, 0 0);
+  transition: clip-path 0s;
+  opacity: 0.7;
+}
+
+.flip-container.flipped .flip-back::after {
+  /* Animate clip-path to reveal */
+  clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 0);
+  transition: clip-path 0.8s ease-out 0.3s; /* Delay to start after flip begins */
+}
+
+/* Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner {
+    transition: none !important;
+  }
+  
+  .flip-container.flipped .flip-inner {
+    transform: none !important;
+  }
+  
+  /* Initial state: Front visible, Back hidden */
+  .flip-front {
+    opacity: 1;
+    transition: opacity 0.8s ease;
+  }
+  
+  .flip-back {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    transform: none !important; /* Reset rotation so it sits on top */
+  }
+  
+  /* Flipped state: Front hidden, Back visible */
+  .flip-container.flipped .flip-front {
+    opacity: 0;
+  }
+  
+  .flip-container.flipped .flip-back {
+    opacity: 1;
+    z-index: 10;
+  }
+  
+  /* Disable wavy line animation in reduced motion */
+  .flip-back::after,
+  .flip-container.flipped .flip-back::after {
+    display: none;
+  }
+  
+  /* Disable SVG stroke animation */
+  .anim-path {
+    display: none;
+  }
+}
+
+/* Animated SVG Stroke */
+.anim-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  will-change: stroke-dashoffset, opacity;
+}
+
+.anim-path.animate-draw {
+  opacity: 1;
+  /* Use linear or very slight ease for constant speed feel */
+  /* Remove complex keyframe stops to ensure continuous flow */
+  animation: drawStroke 4s linear forwards; 
+}
+
+@keyframes drawStroke {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* Animated Generate Button Styles */
+.btn-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn {
+  --border-radius: 24px;
+  --padding: 4px;
+  --transition: 0.4s;
+  --button-color: #101010; /* Same as background */
+  /* --highlight-color-hue removed, using --theme-accent-rgb passed from HTML */
+
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  padding: 0.5em 0.5em 0.5em 1.1em;
+  font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
+  font-size: 1em;
+  font-weight: 400;
+
+  background-color: var(--button-color);
+
+  box-shadow:
+    /* inset */
+    inset 0px 1px 1px rgba(255, 255, 255, 0.2),
+    inset 0px 2px 2px rgba(255, 255, 255, 0.15),
+    inset 0px 4px 4px rgba(255, 255, 255, 0.1),
+    inset 0px 8px 8px rgba(255, 255, 255, 0.05),
+    inset 0px 16px 16px rgba(255, 255, 255, 0.05),
+    /* drop */ 0px -1px 1px rgba(0, 0, 0, 0.02),
+    0px -2px 2px rgba(0, 0, 0, 0.03),
+    0px -4px 4px rgba(0, 0, 0, 0.05),
+    0px -8px 8px rgba(0, 0, 0, 0.06),
+    0px -16px 16px rgba(0, 0, 0, 0.08);
+
+  border: solid 1px #fff2;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+
+  transition:
+    box-shadow var(--transition),
+    border var(--transition),
+    background-color var(--transition);
+}
+
+.btn::before {
+  content: "";
+  position: absolute;
+  top: calc(0px - var(--padding));
+  left: calc(0px - var(--padding));
+  width: calc(100% + var(--padding) * 2);
+  height: calc(100% + var(--padding) * 2);
+  border-radius: calc(var(--border-radius) + var(--padding));
+  pointer-events: none;
+  background-image: linear-gradient(0deg, #0004, #000a);
+
+  z-index: -1;
+  transition:
+    box-shadow var(--transition),
+    filter var(--transition);
+  box-shadow:
+    0 -8px 8px -6px #0000 inset,
+    0 -16px 16px -8px #00000000 inset,
+    1px 1px 1px #fff2,
+    2px 2px 2px #fff1,
+    -1px -1px 1px #0002,
+    -2px -2px 2px #0001;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: linear-gradient(
+    0deg,
+    #fff,
+    rgba(var(--theme-accent-rgb), 1),
+    rgba(var(--theme-accent-rgb), 0.5),
+    8%,
+    transparent
+  );
+  background-position: 0 0;
+  opacity: 0;
+  transition:
+    opacity var(--transition),
+    filter var(--transition);
+}
+
+.btn-letter {
+  position: relative;
+  display: inline-block;
+  color: #fff5;
+  animation: letter-anim 2s ease-in-out infinite;
+  transition:
+    color var(--transition),
+    text-shadow var(--transition),
+    opacity var(--transition);
+}
+
+@keyframes letter-anim {
+  50% {
+    text-shadow: 0 0 5px rgba(var(--theme-accent-rgb), 0.8);
+    color: rgba(var(--theme-accent-rgb), 1);
+  }
+}
+
+.btn-svg {
+  flex-shrink: 0;
+  height: 24px;
+  width: 24px;
+  margin-right: 0.5rem;
+  fill: none;
+  stroke: rgba(var(--theme-accent-rgb), 0.5); /* Dimmed theme color initially */
+  stroke-width: 1.5;
+  animation: flicker 2s linear infinite;
+  animation-delay: 0.5s;
+  filter: drop-shadow(0 0 2px rgba(var(--theme-accent-rgb), 0.5));
+  transition:
+    fill var(--transition),
+    stroke var(--transition),
+    filter var(--transition),
+    opacity var(--transition);
+}
+
+@keyframes flicker {
+  50% {
+    opacity: 0.3;
+    stroke: rgba(var(--theme-accent-rgb), 1); /* Pulse to full brightness */
+    filter: drop-shadow(0 0 4px rgba(var(--theme-accent-rgb), 0.8));
+  }
+}
+
+/* Focus state */
+.txt-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 6.4em;
+}
+
+.txt-1,
+.txt-2 {
+  position: absolute;
+  word-spacing: -1em;
+}
+
+.txt-1 {
+  animation: appear-anim 1s ease-in-out forwards;
+}
+
+.txt-2 {
+  opacity: 0;
+}
+
+@keyframes appear-anim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.btn:focus .txt-1 {
+  animation: opacity-anim 0.3s ease-in-out forwards;
+  animation-delay: 1s;
+}
+
+.btn:focus .txt-2 {
+  animation: opacity-anim 0.3s ease-in-out reverse forwards;
+  animation-delay: 1s;
+}
+
+@keyframes opacity-anim {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.btn:focus .btn-letter {
+  animation:
+    focused-letter-anim 1s ease-in-out forwards,
+    letter-anim 1.2s ease-in-out infinite;
+  animation-delay: 0s, 1s;
+}
+
+@keyframes focused-letter-anim {
+  0%,
+  100% {
+    filter: blur(0px);
+  }
+  50% {
+    transform: scale(2);
+    filter: blur(10px) brightness(150%)
+      drop-shadow(-36px 12px 12px rgba(var(--theme-accent-rgb), 0.8));
+  }
+}
+
+.btn:focus .btn-svg {
+  animation-duration: 1.2s;
+  animation-delay: 0.2s;
+}
+
+.btn:focus::before {
+  box-shadow:
+    0 -8px 12px -6px #fff3 inset,
+    0 -16px 16px -8px rgba(var(--theme-accent-rgb), 0.3) inset,
+    1px 1px 1px #fff3,
+    2px 2px 2px #fff1,
+    -1px -1px 1px #0002,
+    -2px -2px 2px #0001;
+}
+
+.btn:focus::after {
+  opacity: 0.6;
+  mask-image: linear-gradient(0deg, #fff, transparent);
+  filter: brightness(100%);
+}
+
+/* Animation delays for .btn-letter elements */
+.btn-letter:nth-child(1),
+.btn:focus .btn-letter:nth-child(1) {
+  animation-delay: 0s;
+}
+.btn-letter:nth-child(2),
+.btn:focus .btn-letter:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.btn-letter:nth-child(3),
+.btn:focus .btn-letter:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.btn-letter:nth-child(4),
+.btn:focus .btn-letter:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.btn-letter:nth-child(5),
+.btn:focus .btn-letter:nth-child(5) {
+  animation-delay: 0.32s;
+}
+.btn-letter:nth-child(6),
+.btn:focus .btn-letter:nth-child(6) {
+  animation-delay: 0.4s;
+}
+.btn-letter:nth-child(7),
+.btn:focus .btn-letter:nth-child(7) {
+  animation-delay: 0.48s;
+}
+.btn-letter:nth-child(8),
+.btn:focus .btn-letter:nth-child(8) {
+  animation-delay: 0.56s;
+}
+.btn-letter:nth-child(9),
+.btn:focus .btn-letter:nth-child(9) {
+  animation-delay: 0.64s;
+}
+.btn-letter:nth-child(10),
+.btn:focus .btn-letter:nth-child(10) {
+  animation-delay: 0.72s;
+}
+.btn-letter:nth-child(11),
+.btn:focus .btn-letter:nth-child(11) {
+  animation-delay: 0.8s;
+}
+.btn-letter:nth-child(12),
+.btn:focus .btn-letter:nth-child(12) {
+  animation-delay: 0.88s;
+}
+.btn-letter:nth-child(13),
+.btn:focus .btn-letter:nth-child(13) {
+  animation-delay: 0.96s;
+}
+
+/* Active state */
+.btn:active {
+  border: solid 1px rgba(var(--theme-accent-rgb), 0.7);
+  background-color: rgba(var(--theme-accent-rgb), 0.1);
+}
+.btn:active::before {
+  box-shadow:
+    0 -8px 12px -6px #fffa inset,
+    0 -16px 16px -8px rgba(var(--theme-accent-rgb), 0.8) inset,
+    1px 1px 1px #fff4,
+    2px 2px 2px #fff2,
+    -1px -1px 1px #0002,
+    -2px -2px 2px #0001;
+}
+.btn:active::after {
+  opacity: 1;
+  mask-image: linear-gradient(0deg, #fff, transparent);
+  filter: brightness(200%);
+}
+.btn:active .btn-letter {
+  text-shadow: 0 0 1px rgba(var(--theme-accent-rgb), 0.9);
+  animation: none;
+}
+
+/* Hover state */
+.btn:hover {
+  border: solid 1px rgba(var(--theme-accent-rgb), 0.4);
+}
+
+.btn:hover::before {
+  box-shadow:
+    0 -8px 8px -6px #fffa inset,
+    0 -16px 16px -8px rgba(var(--theme-accent-rgb), 0.3) inset,
+    1px 1px 1px #fff2,
+    2px 2px 2px #fff1,
+    -1px -1px 1px #0002,
+    -2px -2px 2px #0001;
+}
+
+.btn:hover::after {
+  opacity: 1;
+  mask-image: linear-gradient(0deg, #fff, transparent);
+}
+
+.btn:hover .btn-svg {
+  stroke: #fff;
+  filter: drop-shadow(0 0 3px rgba(var(--theme-accent-rgb), 1))
+    drop-shadow(0 -4px 6px #0009);
+  animation: none;
+}
+
+/* Prefers-reduced-motion fallback for button */
+@media (prefers-reduced-motion: reduce) {
+  .btn-letter {
+    animation: none !important;
+  }
+  
+  .btn-svg {
+    animation: none !important;
+  }
+  
+  .btn:focus .btn-letter {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }

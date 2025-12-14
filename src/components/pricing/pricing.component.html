@@ -1,0 +1,132 @@
+<section class="relative py-24 overflow-hidden">
+  <div class="container mx-auto px-6 lg:px-8 relative z-10">
+    <div class="text-center max-w-2xl mx-auto mb-16">
+      <h2 class="text-3xl md:text-4xl lg:text-5xl font-light mb-6 leading-tight" style="color: var(--text)">
+        Choose Your <span class="font-medium bg-clip-text text-transparent" [style.background-image]="'linear-gradient(to right, ' + (theme?.accent || '#fff') + ', ' + (theme?.btnBg || '#fff') + ')'">Connection Level</span>
+      </h2>
+      <p class="text-lg mb-8" style="color: var(--muted)">
+        Select the plan that best fits the depth of connection you seek.
+      </p>
+
+      <!-- Toggle -->
+      <div class="flex items-center justify-center gap-4 mb-8">
+        <span class="text-sm font-medium transition-colors duration-300" [class.text-[var(--text)]]="!isYearly" [class.text-[var(--muted)]]="isYearly">Monthly</span>
+        <button 
+          (click)="toggleBilling()"
+          class="relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)]"
+          [style.background-color]="isYearly ? (theme?.accent || '#fff') : 'rgba(255,255,255,0.1)'"
+          [style.box-shadow]="isYearly ? '0 0 10px ' + (theme?.accentSoft || 'rgba(255,255,255,0.2)') : 'none'"
+        >
+          <span 
+            class="absolute top-1 left-1 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-sm"
+            [class.translate-x-6]="isYearly"
+          ></span>
+        </button>
+        <span class="text-sm font-medium transition-colors duration-300" [class.text-[var(--text)]]="isYearly" [class.text-[var(--muted)]]="!isYearly">
+          Yearly <span class="text-xs ml-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--btn-bg)] text-black font-bold">SAVE 20%</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <!-- Basic Plan -->
+      <div class="group relative rounded-3xl p-8 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl border border-[var(--accent-soft)] bg-[rgba(var(--surface-rgb),0.4)] backdrop-blur-md flex flex-col">
+        <div class="mb-6">
+          <h3 class="text-xl font-medium text-[var(--text)] mb-2">Casual</h3>
+          <div class="flex items-baseline gap-1">
+            <span class="text-4xl font-bold text-[var(--text)]">{{ isYearly ? '$9' : '$12' }}</span>
+            <span class="text-sm text-[var(--muted)]">/mo</span>
+          </div>
+          <p class="text-sm text-[var(--muted)] mt-4">Perfect for getting to know your companion.</p>
+        </div>
+        <ul class="space-y-4 mb-8 flex-1">
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Daily check-ins</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Basic emotional support</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Text conversations</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 rounded-full font-semibold transition-all duration-300 border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black hover:shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]">
+          Get Started
+        </button>
+      </div>
+
+      <!-- Pro Plan (Popular) -->
+      <div class="group relative rounded-3xl p-8 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl border border-[var(--accent)] bg-[rgba(var(--surface-rgb),0.6)] backdrop-blur-xl flex flex-col transform md:-translate-y-4 z-10 shadow-[0_0_30px_rgba(var(--accent-rgb),0.1)]">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--btn-bg)] text-black text-xs font-bold uppercase tracking-wide shadow-lg">
+          Most Popular
+        </div>
+        <div class="mb-6">
+          <h3 class="text-xl font-medium text-[var(--text)] mb-2">Deep Connection</h3>
+          <div class="flex items-baseline gap-1">
+            <span class="text-4xl font-bold text-[var(--text)]">{{ isYearly ? '$29' : '$39' }}</span>
+            <span class="text-sm text-[var(--muted)]">/mo</span>
+          </div>
+          <p class="text-sm text-[var(--muted)] mt-4">For those seeking meaningful growth and bond.</p>
+        </div>
+        <ul class="space-y-4 mb-8 flex-1">
+          <li class="flex items-start gap-3 text-sm text-[var(--text)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Everything in Casual</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--text)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Personalized growth plans</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--text)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Voice notes & calls</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--text)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Priority response</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 rounded-full font-bold transition-all duration-300 bg-gradient-to-r from-[var(--accent)] to-[var(--btn-bg)] text-black shadow-lg hover:shadow-[0_0_30px_rgba(var(--accent-rgb),0.4)] hover:scale-[1.02]">
+          Start Your Journey
+        </button>
+      </div>
+
+      <!-- Elite Plan -->
+      <div class="group relative rounded-3xl p-8 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl border border-[var(--accent-soft)] bg-[rgba(var(--surface-rgb),0.4)] backdrop-blur-md flex flex-col">
+        <div class="mb-6">
+          <h3 class="text-xl font-medium text-[var(--text)] mb-2">Soulmate</h3>
+          <div class="flex items-baseline gap-1">
+            <span class="text-4xl font-bold text-[var(--text)]">{{ isYearly ? '$79' : '$99' }}</span>
+            <span class="text-sm text-[var(--muted)]">/mo</span>
+          </div>
+          <p class="text-sm text-[var(--muted)] mt-4">The ultimate companionship experience.</p>
+        </div>
+        <ul class="space-y-4 mb-8 flex-1">
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Everything in Deep Connection</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>24/7 Availability</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Video sessions</span>
+          </li>
+          <li class="flex items-start gap-3 text-sm text-[var(--muted)]">
+            <svg class="w-5 h-5 flex-shrink-0 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Exclusive content gallery</span>
+          </li>
+        </ul>
+        <button class="w-full py-3 rounded-full font-semibold transition-all duration-300 border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black hover:shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]">
+          Go Elite
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+

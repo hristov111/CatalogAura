@@ -1,6 +1,12 @@
-
 import { Component, AfterViewInit, OnDestroy, ElementRef, ViewChild, ChangeDetectionStrategy, NgZone, Input, OnChanges, SimpleChanges } from '@angular/core';
 import * as THREE from 'three';
+
+interface ActiveBurst {
+  mesh: THREE.Points;
+  velocities: Float32Array;
+  startTime: number;
+  duration: number;
+}
 
 @Component({
   selector: 'app-particle-background',
@@ -35,6 +41,11 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   private particlePhases!: Float32Array;    // Phase offsets for breathing/twinkling
   private particleSizes!: Float32Array;     // Individual particle sizes
   private originalColors!: Float32Array;    // Store original colors for breathing effect
+  
+  // Burst System
+  private activeBursts: ActiveBurst[] = [];
+  private particleTextureCanvas!: HTMLCanvasElement; // Cache texture canvas
+
   private particleCount!: number;          // Dynamic based on mode
   private sparkleCount!: number;           // Dynamic based on mode
   private modeConfig = {
@@ -106,6 +117,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {
       this.initScene();
+      this.particleTextureCanvas = this.generateParticleTexture();
       this.createParticles();
       this.createSparkles();
       this.animate();
@@ -113,6 +125,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     });
     window.addEventListener('resize', this.onWindowResize);
     window.addEventListener('mousemove', this.onPointerMove, { passive: true });
+    window.addEventListener('pointerdown', this.onPointerDown);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -140,6 +153,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     }
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('mousemove', this.onPointerMove);
+    window.removeEventListener('pointerdown', this.onPointerDown);
     
     // Clean up ResizeObserver
     if (this.resizeObserver) {
@@ -152,6 +166,14 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
   
   private disposeThreeObjects(): void {
     this.disposeParticleGeometries();
+    // Dispose active bursts
+    this.activeBursts.forEach(burst => {
+        this.scene.remove(burst.mesh);
+        burst.mesh.geometry.dispose();
+        (burst.mesh.material as THREE.PointsMaterial).dispose();
+    });
+    this.activeBursts = [];
+
     if (this.renderer) {
         this.renderer.dispose();
     }
@@ -259,7 +281,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
 
     const material = new THREE.PointsMaterial({
       size: 0.09, // This becomes the base size, individual sizes will vary
-      map: new THREE.CanvasTexture(this.generateParticleTexture()),
+      map: new THREE.CanvasTexture(this.particleTextureCanvas || this.generateParticleTexture()),
       blending: THREE.NormalBlending,
       depthWrite: false,
       transparent: true,
@@ -300,7 +322,7 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
-      map: new THREE.CanvasTexture(this.generateParticleTexture()),
+      map: new THREE.CanvasTexture(this.particleTextureCanvas || this.generateParticleTexture()),
       sizeAttenuation: true,
     });
 
@@ -364,6 +386,85 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     this.parallaxTarget.set(x, -y);
   }
 
+  private onPointerDown = (event: PointerEvent): void => {
+    const x = (event.clientX / window.innerWidth) * 2 - 1;
+    const y = -(event.clientY / window.innerHeight) * 2 + 1; // Invert Y for raycasting
+
+    // Project click to world space at approx Z=0
+    const vec = new THREE.Vector3(x, y, 0.5);
+    vec.unproject(this.camera);
+    vec.sub(this.camera.position).normalize();
+    const distance = -this.camera.position.z / vec.z;
+    const pos = this.camera.position.clone().add(vec.multiplyScalar(distance));
+
+    this.createBurst(pos);
+  }
+
+  private createBurst(position: THREE.Vector3): void {
+    const burstCount = 80;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(burstCount * 3);
+    const colors = new Float32Array(burstCount * 3);
+    const velocities = new Float32Array(burstCount * 3);
+    
+    // Pick a burst color from the palette - prefer accent
+    const color = this.palette[0] || new THREE.Color(this.accent);
+
+    for (let i = 0; i < burstCount; i++) {
+      const i3 = i * 3;
+      
+      // Spawn in a small cluster/sphere
+      const radius = Math.random() * 0.3;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI; // Full sphere
+      
+      // Initial positions: slightly randomized around impact point
+      positions[i3] = position.x + radius * Math.sin(phi) * Math.cos(theta);
+      positions[i3 + 1] = position.y + radius * Math.sin(phi) * Math.sin(theta);
+      positions[i3 + 2] = position.z + radius * Math.cos(phi) * 0.5; // Flatten z slightly
+      
+      // Velocities: explode outward radially
+      const speed = 2.0 + Math.random() * 3.0; // Explosion speed
+      
+      // Direction away from center (shockwave)
+      const dir = new THREE.Vector3(
+        positions[i3] - position.x,
+        positions[i3+1] - position.y,
+        positions[i3+2] - position.z
+      ).normalize();
+      
+      velocities[i3] = dir.x * speed;
+      velocities[i3 + 1] = dir.y * speed;
+      velocities[i3 + 2] = dir.z * speed;
+      
+      // Color
+      color.toArray(colors, i3);
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.PointsMaterial({
+      size: 0.12,
+      map: new THREE.CanvasTexture(this.particleTextureCanvas || this.generateParticleTexture()),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 1.0,
+      vertexColors: true
+    });
+    
+    const burstMesh = new THREE.Points(geometry, material);
+    this.scene.add(burstMesh);
+    
+    this.activeBursts.push({
+      mesh: burstMesh,
+      velocities: velocities,
+      startTime: this.clock.getElapsedTime(),
+      duration: 1.2 // 1-1.5s fade out
+    });
+  }
+
   private animate = (): void => {
     this.animationFrameId = requestAnimationFrame(this.animate);
 
@@ -379,8 +480,11 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     this.scene.position.x = this.parallax.x * 0.5;
     this.scene.position.y = this.parallax.y * 0.35;
 
+    // Update active bursts
+    this.updateBursts(deltaTime, elapsedTime);
+
     // Update floating particle motion and breathing effects
-    this.updateParticleFloating(deltaTime, elapsedTime);
+    this.updateParticles(deltaTime, elapsedTime);
 
     // Original swap animation (preserve existing functionality)
     if (this.swapState.active) {
@@ -419,7 +523,45 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
     this.renderer.render(this.scene, this.camera);
   }
 
-  private updateParticleFloating(deltaTime: number, elapsedTime: number): void {
+  private updateBursts(deltaTime: number, currentTime: number): void {
+    for (let i = this.activeBursts.length - 1; i >= 0; i--) {
+      const burst = this.activeBursts[i];
+      const age = currentTime - burst.startTime;
+      
+      if (age > burst.duration) {
+        // Remove dead burst
+        this.scene.remove(burst.mesh);
+        burst.mesh.geometry.dispose();
+        (burst.mesh.material as THREE.PointsMaterial).dispose();
+        this.activeBursts.splice(i, 1);
+        continue;
+      }
+      
+      // Update burst particles
+      const positions = (burst.mesh.geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
+      const count = positions.length / 3;
+      const progress = age / burst.duration;
+      
+      // Fade out
+      (burst.mesh.material as THREE.PointsMaterial).opacity = 1.0 - Math.pow(progress, 2); // Accelerate fade at end
+      
+      // Move particles
+      for (let j = 0; j < count; j++) {
+        const j3 = j * 3;
+        // Apply velocity with some drag (falloff)
+        // Drag coeff implies velocity decreases over time
+        const drag = Math.max(0, 1.0 - progress * 1.5); 
+        
+        positions[j3] += burst.velocities[j3] * deltaTime * drag;
+        positions[j3 + 1] += burst.velocities[j3 + 1] * deltaTime * drag;
+        positions[j3 + 2] += burst.velocities[j3 + 2] * deltaTime * drag;
+      }
+      
+      (burst.mesh.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    }
+  }
+
+  private updateParticles(deltaTime: number, elapsedTime: number): void {
     if (!this.particles || !this.particleVelocities) return;
 
     const positions = (this.particles.geometry.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
@@ -430,10 +572,10 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
       const i3 = i * 3;
       const posY = i3 + 1; // Y position index
 
-      // 1. Floating motion: move particles upward
+      // 1. Update Position (Floating)
       positions[posY] += this.particleVelocities[i] * deltaTime;
 
-      // 2. Respawn particles that float too high
+      // Respawn particles that float too high
       if (positions[posY] > 6) { // Upper boundary
         // Reset to bottom with new random properties
         const radius = (Math.random() ** 2) * 8 + 1;
@@ -453,8 +595,8 @@ export class ParticleBackgroundComponent implements AfterViewInit, OnDestroy, On
         this.palette[paletteIndex].toArray(this.originalColors, i3);
       }
 
-      // 3. Breathing/twinkling effect: modulate color brightness
-      const twinklePhase = elapsedTime * 0.8 + this.particlePhases[i]; // Slow twinkling
+      // 2. Breathing/twinkling effect: modulate color brightness
+      const twinklePhase = elapsedTime * 0.8 + this.particlePhases[i]; 
       const brightness = 0.6 + config.twinkleAmplitude * Math.sin(twinklePhase);
       
       // Apply brightness to original color
