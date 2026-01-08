@@ -44,6 +44,15 @@ export class ProfileChatComponent implements OnDestroy {
     effect(() => {
       this.showWelcome = this.messages().length === 0;
     });
+    
+    // Load chat history when profile changes
+    effect(() => {
+      const currentProfile = this.profile();
+      if (currentProfile?.id) {
+        console.log(`📂 Profile changed to ${currentProfile.id} (${currentProfile.name}) - loading chat history`);
+        this.chatService.switchToPersona(currentProfile.id);
+      }
+    });
   }
   
   ngOnDestroy(): void {
@@ -65,7 +74,7 @@ export class ProfileChatComponent implements OnDestroy {
     this.errorMessage = null;
     
     try {
-      await this.chatService.sendMessage(message, this.profile().id);
+      await this.chatService.sendMessage(message, this.profile().id, this.profile().name);
     } catch (error: any) {
       console.error('Error sending message:', error);
       this.errorMessage = error.message || 'Failed to send message';

@@ -14,7 +14,7 @@ const authMiddleware = require('../authMiddleware');
  */
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { message, persona_id, conversation_id } = req.body;
+    const { message, persona_id, conversation_id, personality_name } = req.body;
 
     // Validate required fields
     if (!message) {
@@ -88,6 +88,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const aiRequestBody = {
       message,
       system_prompt: persona.system_prompt,
+      personality_name: personality_name || persona.name.toLowerCase(), // Use provided or fallback to persona name
     };
 
     if (conversation_id) {

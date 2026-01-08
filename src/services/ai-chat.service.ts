@@ -67,6 +67,13 @@ export class AiChatService {
   readonly conversationId = signal<string | null>(null);
   readonly isProcessing = signal<boolean>(false);
   readonly connectionStatus = signal<ConnectionStatus>('disconnected');
+  readonly currentPersonaId = signal<number | null>(null);
+  
+  // Store chat history per persona
+  private chatHistoryByPersona = new Map<number, {
+    messages: ChatMessage[];
+    conversationId: string | null;
+  }>();
   
   // Config
   readonly config = signal<ChatConfig>({
@@ -171,7 +178,26 @@ export class AiChatService {
   /**
    * Send a message and stream the response
    */
-  async sendMessage(message: string, profileId?: number): Promise<void> {
+  async sendMessage(message: string, profileId?: number, profileName?: string): Promise<void> {
+    // Only switch if persona actually changed (not during ongoing conversation)
+    if (profileId !== undefined && this.currentPersonaId() !== null && this.currentPersonaId() !== profileId) {
+      console.log(`🔄 Persona changed in sendMessage from ${this.currentPersonaId()} to ${profileId}`);
+      
+      // Save current persona's chat
+      this.savePersonaChat(this.currentPersonaId()!);
+      
+      // Load new persona's chat
+      this.loadPersonaChat(profileId);
+      
+      // Update current persona ID
+      this.currentPersonaId.set(profileId);
+    } else if (profileId !== undefined && this.currentPersonaId() === null) {
+      // First message ever - just set the persona ID
+      this.currentPersonaId.set(profileId);
+      console.log(`✨ First message - set persona to ${profileId}`);
+    }
+    // If currentPersonaId === profileId, we're continuing the same conversation - do nothing
+    
     if (!message.trim() || this.isProcessing()) {
       return;
     }
@@ -204,7 +230,7 @@ export class AiChatService {
     this.connectionStatus.set('processing');
 
     try {
-      await this.streamChat(message, chatToken, profileId);
+      await this.streamChat(message, chatToken, profileId, profileName);
     } catch (error: any) {
       console.error('Chat error:', error);
       
@@ -218,7 +244,7 @@ export class AiChatService {
         if (newChatToken) {
           console.log('✅ Chat token refreshed, retrying request...');
           // Retry with new token
-          await this.streamChat(message, newChatToken, profileId);
+          await this.streamChat(message, newChatToken, profileId, profileName);
           return;
         }
         
@@ -235,12 +261,13 @@ export class AiChatService {
   /**
    * Stream chat response via SSE
    */
-  private async streamChat(message: string, token: string, profileId?: number): Promise<void> {
+  private async streamChat(message: string, token: string, profileId?: number, profileName?: string): Promise<void> {
     const apiUrl = this.config().apiUrl;
     
     const body: any = {
       message: message,
       persona_id: profileId, // Send persona_id to Node.js proxy
+      personality_name: profileName?.toLowerCase(), // Send lowercase personality name
     };
 
     if (this.conversationId()) {
@@ -248,8 +275,8 @@ export class AiChatService {
     }
 
     // Get Supabase token for Node.js backend authentication
-    const supabaseToken = await this.authService.getSession();
-    const supabaseAccessToken = supabaseToken?.session?.access_token;
+    const supabaseSession = await this.authService.getSession();
+    const supabaseAccessToken = supabaseSession?.access_token;
     
     if (!supabaseAccessToken) {
       throw new Error('No Supabase session found');
@@ -622,13 +649,47 @@ export class AiChatService {
   }
 
   /**
+   * Switch to a different persona (called when navigating to persona page)
+   */
+  switchToPersona(personaId: number): void {
+    const currentId = this.currentPersonaId();
+    
+    // If already on this persona, do nothing
+    if (currentId === personaId) {
+      console.log(`✅ Already on persona ${personaId}, keeping conversation`);
+      return;
+    }
+    
+    // If switching to a different persona
+    if (currentId !== null && currentId !== personaId) {
+      console.log(`🔄 Switching from persona ${currentId} to ${personaId}`);
+      // Save current persona's chat (including conversation_id)
+      this.savePersonaChat(currentId);
+    }
+    
+    // Load new persona's chat (or start fresh)
+    this.loadPersonaChat(personaId);
+    
+    // Update current persona ID
+    this.currentPersonaId.set(personaId);
+  }
+
+  /**
    * Clear chat history
    */
   clearChat(): void {
+    const personaId = this.currentPersonaId();
+    
     this.messages.set([]);
     this.thinkingSteps.set([]);
     this.conversationId.set(null);
     localStorage.removeItem('chat_conversation_id');
+    
+    // Clear from persona history too
+    if (personaId !== null) {
+      this.chatHistoryByPersona.delete(personaId);
+      console.log(`🗑️ Cleared chat history for persona ${personaId}`);
+    }
   }
 
   /**
@@ -649,13 +710,40 @@ export class AiChatService {
   }
 
   /**
+   * Save current persona's chat to history
+   */
+  private savePersonaChat(personaId: number): void {
+    this.chatHistoryByPersona.set(personaId, {
+      messages: [...this.messages()],
+      conversationId: this.conversationId(),
+    });
+    console.log(`💾 Saved chat history for persona ${personaId}, ${this.messages().length} messages`);
+  }
+  
+  /**
+   * Load persona's chat from history
+   */
+  private loadPersonaChat(personaId: number): void {
+    const history = this.chatHistoryByPersona.get(personaId);
+    if (history) {
+      this.messages.set(history.messages);
+      this.conversationId.set(history.conversationId);
+      console.log(`📥 Loaded chat history for persona ${personaId}, ${history.messages.length} messages`);
+    } else {
+      // No history for this persona, start fresh
+      this.messages.set([]);
+      this.conversationId.set(null);
+      console.log(`✨ Starting fresh chat for persona ${personaId}`);
+    }
+    this.thinkingSteps.set([]);
+  }
+
+  /**
    * Load conversation ID from storage
    */
   private loadConversationFromStorage(): void {
-    const id = localStorage.getItem('chat_conversation_id');
-    if (id) {
-      this.conversationId.set(id);
-    }
+    // No longer loading from global storage
+    // Each persona now has its own chat history
   }
 }
 
