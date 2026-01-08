@@ -1,0 +1,332 @@
+<div class="settings-container">
+  <div class="settings-wrapper">
+    <div class="settings-header">
+      <h1>Account Settings</h1>
+      <p>Manage your account preferences and security</p>
+    </div>
+
+    <div class="settings-content">
+      <!-- Tabs Navigation -->
+      <div class="tabs-nav">
+        <button
+          class="tab-button"
+          [class.active]="activeTab() === 'profile'"
+          (click)="switchTab('profile')"
+        >
+          👤 Profile
+        </button>
+        <button
+          class="tab-button"
+          [class.active]="activeTab() === 'security'"
+          (click)="switchTab('security')"
+        >
+          🔒 Security
+        </button>
+        <button
+          class="tab-button"
+          [class.active]="activeTab() === 'activity'"
+          (click)="switchTab('activity')"
+        >
+          📋 Activity
+        </button>
+        <button
+          class="tab-button"
+          [class.active]="activeTab() === 'account'"
+          (click)="switchTab('account')"
+        >
+          ⚙️ Account
+        </button>
+      </div>
+
+      <!-- Messages -->
+      @if (successMessage()) {
+        <div class="alert alert-success">
+          {{ successMessage() }}
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="alert alert-error">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Profile Tab -->
+        @if (activeTab() === 'profile') {
+          <div class="tab-panel">
+            <h2>Profile Information</h2>
+            <p class="tab-description">Update your personal information and profile details</p>
+
+            <form (ngSubmit)="updateProfile()" class="settings-form">
+              <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input
+                  type="text"
+                  id="fullName"
+                  [(ngModel)]="fullName"
+                  name="fullName"
+                  placeholder="Enter your full name"
+                  [disabled]="isLoading()"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  [value]="authService.getUser()?.email"
+                  disabled
+                  class="disabled-input"
+                />
+                <p class="input-hint">Email cannot be changed at this time</p>
+              </div>
+
+              <div class="form-group">
+                <label for="bio">Bio</label>
+                <textarea
+                  id="bio"
+                  [(ngModel)]="bio"
+                  name="bio"
+                  placeholder="Tell us about yourself..."
+                  rows="4"
+                  maxlength="500"
+                  [disabled]="isLoading()"
+                ></textarea>
+                <p class="input-hint">{{ bio().length }} / 500 characters</p>
+              </div>
+
+              <div class="form-group">
+                <label for="avatarUrl">Avatar URL</label>
+                <input
+                  type="url"
+                  id="avatarUrl"
+                  [(ngModel)]="avatarUrl"
+                  name="avatarUrl"
+                  placeholder="https://example.com/avatar.jpg"
+                  [disabled]="isLoading()"
+                />
+                <p class="input-hint">Enter a URL to your profile picture</p>
+              </div>
+
+              <button type="submit" class="btn btn-primary" [disabled]="isLoading()">
+                @if (isLoading()) {
+                  <span class="spinner"></span>
+                  Saving...
+                } @else {
+                  Save Changes
+                }
+              </button>
+            </form>
+          </div>
+        }
+
+        <!-- Security Tab -->
+        @if (activeTab() === 'security') {
+          <div class="tab-panel">
+            <div class="section">
+              <h2>Change Password</h2>
+              <p class="tab-description">Update your password to keep your account secure</p>
+
+              <form (ngSubmit)="changePassword()" class="settings-form">
+                <div class="form-group">
+                  <label for="oldPassword">Current Password</label>
+                  <input
+                    type="password"
+                    id="oldPassword"
+                    [(ngModel)]="oldPassword"
+                    name="oldPassword"
+                    placeholder="Enter current password"
+                    [disabled]="isLoading()"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input
+                    type="password"
+                    id="newPassword"
+                    [(ngModel)]="newPassword"
+                    name="newPassword"
+                    placeholder="Enter new password"
+                    [disabled]="isLoading()"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="confirmNewPassword">Confirm New Password</label>
+                  <input
+                    type="password"
+                    id="confirmNewPassword"
+                    [(ngModel)]="confirmNewPassword"
+                    name="confirmNewPassword"
+                    placeholder="Confirm new password"
+                    [disabled]="isLoading()"
+                  />
+                  
+                  @if (confirmNewPassword()) {
+                    <div class="password-match">
+                      @if (passwordsMatch()) {
+                        <span class="match-success">✓ Passwords match</span>
+                      } @else {
+                        <span class="match-error">✗ Passwords do not match</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <button type="submit" class="btn btn-primary" [disabled]="isLoading() || !passwordsMatch()">
+                  @if (isLoading()) {
+                    <span class="spinner"></span>
+                    Updating...
+                  } @else {
+                    Update Password
+                  }
+                </button>
+              </form>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+              <h2>Active Sessions</h2>
+              <p class="tab-description">Manage devices where you're currently signed in</p>
+
+              @if (sessions().length === 0) {
+                <div class="empty-state">
+                  <p>No active sessions found</p>
+                  <button class="btn btn-secondary" (click)="loadSessions()">
+                    Refresh
+                  </button>
+                </div>
+              } @else {
+                <div class="sessions-list">
+                  @for (session of sessions(); track session.id) {
+                    <div class="session-card">
+                      <div class="session-icon">📱</div>
+                      <div class="session-info">
+                        <div class="session-device">{{ session.deviceInfo }}</div>
+                        <div class="session-meta">
+                          <span>IP: {{ session.ipAddress }}</span>
+                          <span>Last active: {{ formatDate(session.lastActivity) }}</span>
+                        </div>
+                      </div>
+                      <button
+                        class="btn btn-danger btn-sm"
+                        (click)="revokeSession(session.id)"
+                        [disabled]="isLoading()"
+                      >
+                        Revoke
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <button
+                  class="btn btn-danger"
+                  (click)="logoutAllDevices()"
+                  [disabled]="isLoading()"
+                >
+                  Logout All Devices
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Activity Tab -->
+        @if (activeTab() === 'activity') {
+          <div class="tab-panel">
+            <h2>Activity Log</h2>
+            <p class="tab-description">View your recent account activity and security events</p>
+
+            @if (auditLogs().length === 0) {
+              <div class="empty-state">
+                <p>No activity logs found</p>
+                <button class="btn btn-secondary" (click)="loadAuditLogs()">
+                  Refresh
+                </button>
+              </div>
+            } @else {
+              <div class="activity-list">
+                @for (log of auditLogs(); track log.id) {
+                  <div class="activity-item">
+                    <div class="activity-icon">{{ getEventIcon(log.eventType) }}</div>
+                    <div class="activity-content">
+                      <div class="activity-title">{{ formatEventType(log.eventType) }}</div>
+                      <div class="activity-meta">
+                        <span>{{ formatDate(log.createdAt) }}</span>
+                        @if (log.ipAddress) {
+                          <span>IP: {{ log.ipAddress }}</span>
+                        }
+                      </div>
+                      @if (log.metadata) {
+                        <div class="activity-details">
+                          @for (entry of Object.entries(log.metadata); track $index) {
+                            <span class="detail-badge">{{ entry[0] }}: {{ entry[1] }}</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Account Tab -->
+        @if (activeTab() === 'account') {
+          <div class="tab-panel">
+            <div class="section">
+              <h2>Email Verification</h2>
+              <p class="tab-description">Verify your email address to unlock all features</p>
+
+              @if (authService.getUser()?.emailVerified) {
+                <div class="verification-card verified">
+                  <div class="verification-icon">✓</div>
+                  <div class="verification-content">
+                    <h3>Email Verified</h3>
+                    <p>Your email address has been verified</p>
+                  </div>
+                </div>
+              } @else {
+                <div class="verification-card unverified">
+                  <div class="verification-icon">⚠️</div>
+                  <div class="verification-content">
+                    <h3>Email Not Verified</h3>
+                    <p>Please check your inbox for a verification email</p>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section danger-zone">
+              <h2>Danger Zone</h2>
+              <p class="tab-description">Irreversible actions that will affect your account</p>
+
+              <div class="danger-card">
+                <div class="danger-content">
+                  <h3>Delete Account</h3>
+                  <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
+                </div>
+                <button class="btn btn-danger" disabled>
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="settings-footer">
+      <a routerLink="/user/profile" class="back-link">← Back to Profile</a>
+    </div>
+  </div>
+</div>
+

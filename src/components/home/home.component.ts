@@ -37,6 +37,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
 
   readonly profiles = this.profileService.profiles;
+  readonly loading = this.profileService.loading;
+  readonly error = this.profileService.error;
   readonly promptText = signal('');
   readonly showHeroGallery = signal(false);
   readonly isTransitioning = signal(false);
@@ -46,10 +48,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly isLightboxOpen = signal(false);
   
   // Intro animation state
-  readonly introActive = signal(true);
+  // Check session storage to see if we've already shown the intro
+  readonly introActive = signal(!sessionStorage.getItem('introShown'));
   readonly heartFormed = signal(false);
-  readonly ctaAwake = signal(false);
-  readonly cardsLoaded = signal(false);
+  readonly ctaAwake = signal(!!sessionStorage.getItem('introShown'));
+  readonly cardsLoaded = signal(!!sessionStorage.getItem('introShown'));
 
   readonly featuredIndex = signal(0);
   private sliderInterval: any;
@@ -194,6 +197,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onExplosionComplete(): void {
+    // Mark intro as shown in session storage
+    sessionStorage.setItem('introShown', 'true');
     setTimeout(() => {
       this.introActive.set(false);
       setTimeout(() => {

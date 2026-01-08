@@ -1,0 +1,128 @@
+<div class="profile-container">
+  <div class="profile-wrapper">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner-large"></div>
+        <p>Loading profile...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <h2>Error Loading Profile</h2>
+        <p>{{ error() }}</p>
+        <button class="btn btn-primary" (click)="loadProfileData()">
+          Try Again
+        </button>
+      </div>
+    } @else {
+      <div class="profile-header">
+        <div class="profile-cover"></div>
+        <div class="profile-info">
+          <div class="avatar-section">
+            @if (hasValidAvatar() && !avatarError()) {
+              <img [src]="profile()?.avatar_url || authService.getUser()!.avatarUrl!" 
+                   [alt]="profile()?.full_name || authService.getUser()?.fullName || 'User'"
+                   (error)="onAvatarError()"
+                   class="avatar" />
+            } @else {
+              <div class="avatar avatar-placeholder">
+                {{ getInitials(profile()?.full_name || authService.getUser()?.fullName) }}
+              </div>
+            }
+          </div>
+          
+          <div class="profile-details">
+            <h1>{{ profile()?.full_name || authService.getUser()?.fullName || 'User' }}</h1>
+            <p class="email">{{ authService.getUser()?.email }}</p>
+            
+            @if (profile()?.bio) {
+              <p class="bio">{{ profile()!.bio }}</p>
+            }
+            
+            <div class="profile-meta">
+              <div class="meta-item">
+                <span class="meta-label">Member Since</span>
+                <span class="meta-value">{{ formatDate(profile()?.created_at) }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Last Login</span>
+                <span class="meta-value">{{ formatDate(profile()?.last_login) }}</span>
+              </div>
+            </div>
+            
+            <a routerLink="/user/settings" class="btn btn-primary">
+              Edit Profile
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💬</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats()?.messageCount || 0 }}</div>
+              <div class="stat-label">Messages</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📱</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats()?.activeSessions || 0 }}</div>
+              <div class="stat-label">Active Sessions</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats()?.accountAge || 'New' }}</div>
+              <div class="stat-label">Account Age</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            @if (authService.getUser()?.emailVerified) {
+              <div class="stat-icon verified">✓</div>
+              <div class="stat-info">
+                <div class="stat-value verified-text">Verified</div>
+                <div class="stat-label">Email Status</div>
+              </div>
+            } @else {
+              <div class="stat-icon unverified">⚠️</div>
+              <div class="stat-info">
+                <div class="stat-value unverified-text">Not Verified</div>
+                <div class="stat-label">Email Status</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <h2>Quick Actions</h2>
+          <div class="actions-grid">
+            <a routerLink="/user/settings" class="action-card">
+              <div class="action-icon">⚙️</div>
+              <div class="action-content">
+                <h3>Account Settings</h3>
+                <p>Manage your account preferences and security</p>
+              </div>
+            </a>
+
+            <a routerLink="/" class="action-card">
+              <div class="action-icon">🏠</div>
+              <div class="action-content">
+                <h3>Browse Profiles</h3>
+                <p>Explore AI personas and start conversations</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+
